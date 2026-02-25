@@ -2,7 +2,8 @@
 
 [![CI](https://github.com/JSON-Commander/json-commander/actions/workflows/ci.yml/badge.svg)](https://github.com/JSON-Commander/json-commander/actions/workflows/ci.yml)
 
-A C++20 library for defining command line interfaces via JSON schemas.
+A C++20 library for defining command line interfaces via JSON schemas
+(current version: 0.3.0).
 
 Inspired by OCaml's [cmdliner](https://erratique.ch/software/cmdliner),
 JSON-Commander takes a declarative approach: describe your CLI as a JSON schema,
@@ -126,6 +127,34 @@ int main(int argc, char *argv[]) {
 }
 ```
 
+## CMake Executable Helper
+
+`json_commander_add_executable` is a CMake function that generates a complete
+CLI executable from a JSON schema and a callback function. It creates the
+`main()` boilerplate, links all required dependencies, and bakes the schema
+path into the binary as a compile definition.
+
+```cmake
+json_commander_add_executable(serve
+  SCHEMA serve.json
+  MAIN serve::run
+  FROM_HEADER serve_main.hpp)
+```
+
+**Parameters:**
+
+| Parameter     | Required | Description                                                                         |
+|---------------|----------|-------------------------------------------------------------------------------------|
+| `SCHEMA`      | yes      | Path to the JSON schema file (relative to `CMAKE_CURRENT_SOURCE_DIR`)               |
+| `MAIN`        | yes      | Fully-qualified name of the callback function (`int(const nlohmann::json&)`)        |
+| `FROM_HEADER` | no       | Header file to `#include` for the callback; omit if the function is already visible |
+
+Additional source files can be passed as unnamed arguments after the keyword
+parameters.
+
+The function is available after `find_package(json-commander)` or when
+building as a subdirectory.
+
 ## JSON-Commander CLI Tool
 
 JSON-Commander ships with a `json-commander` tool that dogfoods the library:
@@ -153,6 +182,14 @@ ctest --test-dir build-<preset-name> -C Release --output-on-failure
 Presets are defined per-compiler in `CMakeUserPresets.json` (auto-generated
 from `compilers.json`). The base hidden preset lives in `CMakePresets.json`.
 
+### Code Formatting
+
+Formatting is enforced via [pre-commit](https://pre-commit.com/) (clang-format, LLVM style):
+
+```sh
+pre-commit run --all-files
+```
+
 ### Compiler Requirements
 
 C++20. CI-tested with GCC 12--14, Clang 16--18, and Apple Clang (Xcode 15,
@@ -160,28 +197,61 @@ ARM).
 
 ### Build Configurations
 
-| Configuration | Flags |
-|---|---|
-| Release | `-g -DNDEBUG -O3` |
+| Configuration  | Flags                                            |
+|----------------|--------------------------------------------------|
+| Release        | `-g -DNDEBUG -O3`                                |
 | RelWithDebInfo | `-fsanitize=undefined -fsanitize=address -g -O3` |
 
 All builds use `-Wall -Wextra -pedantic -Werror`.
+
+## Installation
+
+```sh
+cmake --install build-<preset-name> --config Release --prefix /usr/local
+```
+
+This installs:
+
+| Component                                                      | Destination                 |
+|----------------------------------------------------------------|-----------------------------|
+| Library headers                                                | `include/json_commander/`   |
+| `json-commander` CLI tool                                      | `bin/`                      |
+| JSON schemas                                                   | `share/json_commander/`     |
+| CMake config files (including `json_commander_add_executable`) | `lib/cmake/json-commander/` |
+
+Downstream projects consume the library via `find_package`:
+
+```cmake
+find_package(json-commander REQUIRED)
+
+# Use the executable helper ...
+json_commander_add_executable(my_tool
+  SCHEMA my_tool.json
+  MAIN my_tool::run
+  FROM_HEADER my_tool_main.hpp)
+
+# ... or link directly
+target_link_libraries(my_app PRIVATE
+  json_commander::header
+  json_commander::library)
+```
 
 ## Dependencies
 
 Managed via FetchContent through the `cmake_utilities` submodule:
 
-| Dependency | Purpose |
-|---|---|
-| [nlohmann/json](https://github.com/nlohmann/json) v3.10.0 | JSON parsing and representation |
-| [nlohmann/json-schema-validator](https://github.com/pboettch/json-schema-validator) | JSON Schema validation |
-| [Catch2](https://github.com/catchorg/Catch2) | Testing framework |
+| Dependency                                                                          | Purpose                         |
+|-------------------------------------------------------------------------------------|---------------------------------|
+| [nlohmann/json](https://github.com/nlohmann/json) v3.10.0                           | JSON parsing and representation |
+| [nlohmann/json-schema-validator](https://github.com/pboettch/json-schema-validator) | JSON Schema validation          |
+| [Catch2](https://github.com/catchorg/Catch2)                                        | Testing framework               |
 
 ## Project Structure
 
 ```
 json_commander/            Library headers (C++)
   schema/                  JSON-Commander metaschema (JSON Schema)
+  config.hpp.in            Generated config (version, schema paths, compiler info)
   model.hpp                C++ data model (Root, Command, Argument, ...)
   model_json.hpp           JSON serialization/deserialization
   schema_loader.hpp        Schema validation and loading
@@ -199,7 +269,7 @@ json_commander_c/          C API shared library
 json_commander_testing/    Test sources (Catch2)
 examples/
   greet/                   Simple flag + positional example (C++)
-  serve/                   Schema-driven server example (C++)
+  serve/                   Schema-driven server example (uses json_commander_add_executable)
   greet-c/                 Inline schema example (C API)
   serve-c/                 File-loaded schema example (C API)
   fake-git/                Nested subcommands example (modeled after git)
