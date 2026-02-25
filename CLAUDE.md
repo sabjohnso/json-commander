@@ -20,14 +20,16 @@ cmake --build build --config Release
 # Run all tests
 ctest --test-dir build -C Release --output-on-failure
 
-# Run a single test (test names match module names: metaschema, model, schema_loader, conv, validate, arg, cmd, manpage, parse, config_schema)
+# Run a single test (test names match module names: metaschema, model, schema_loader, conv, validate, arg, cmd, manpage, parse, config_schema, run)
 ctest --test-dir build -C Release --output-on-failure -R <test_name>
 
 # Run a single test executable directly (useful for Catch2 tag filtering)
 ./build/Release/<test_name>_test "[tag]"
 
-# Format check (uses clang-format with LLVM-based style)
+# Reformat all .hpp files in-place (uses clang-format with LLVM-based style)
 ./scripts/check-format.sh
+
+# CI verifies formatting with: ./scripts/check-format.sh && git diff --exit-code
 ```
 
 Build configurations: Release (`-O3 -DNDEBUG`) and RelWithDebInfo (adds ASan + UBSan). All builds use `-Wall -Wextra -pedantic -Werror`.
@@ -54,6 +56,8 @@ JSON Schema  →  model::Root  →  cmd::RootSpec  →  parse::parse()  →  JSO
 7. **parse.hpp** — Consumes specs + CLI tokens, produces `ParseResult` (variant: `ParseOk`|`HelpRequest`|`VersionRequest`|`ManpageRequest`)
 8. **manpage.hpp** — Renders man page sections to groff or plain text
 9. **config_schema.hpp** — Generates JSON Schema (draft 2020-12) describing the runtime config output
+10. **run.hpp** — Simplified entry point: `json_commander::run()` handles schema loading, parsing, and dispatch (`--help`, `--version`, `--man`) in a single call
+11. **json_commander_c/** — C shared library exposing `jcmd_run()` for embedding in C programs or FFI bindings
 
 ## Key Patterns
 
@@ -74,4 +78,4 @@ Tests use Catch2 and are organized by module in `json_commander_testing/`. Each 
 - camelCase for functions/variables, PascalCase for types
 - `std::optional` over nullable pointers
 - Structured bindings where appropriate
-- Current version: 0.2.0 (semantic versioning)
+- Current version: 0.3.0 (semantic versioning)

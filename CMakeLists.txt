@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(json-commander VERSION 0.2.0 LANGUAGES C CXX)
+project(json-commander VERSION 0.3.0 LANGUAGES C CXX)
 
 option(json_commander_BUILD_TESTING "Build the json-commander tests" ON)
 option(json_commander_BUILD_EXAMPLES "Build the json-commander examples" ON)

@@ -916,3 +916,145 @@ TEST_CASE("to_plain_text(root, {\"build\"}) produces subcommand output", "[manpa
   REQUIRE(output.find("\\fR") == std::string::npos);
   REQUIRE(output.find(".TH") == std::string::npos);
 }
+
+// ---------------------------------------------------------------------------
+// Phase 12: ANSI rendering
+// ---------------------------------------------------------------------------
+
+TEST_CASE("ansi::unescape converts \\fB to ANSI bold", "[manpage][ansi]") {
+  REQUIRE(ansi::unescape("\\fBbold\\fR") == "\033[1mbold\033[0m");
+}
+
+TEST_CASE("ansi::unescape converts \\fI to ANSI underline", "[manpage][ansi]") {
+  REQUIRE(ansi::unescape("\\fIitalic\\fR") == "\033[4mitalic\033[0m");
+}
+
+TEST_CASE("ansi::unescape converts \\fR to ANSI reset", "[manpage][ansi]") {
+  REQUIRE(ansi::unescape("\\fR") == "\033[0m");
+}
+
+TEST_CASE("ansi::unescape converts combined markers", "[manpage][ansi]") {
+  REQUIRE(ansi::unescape("\\fBbold\\fR and \\fIitalic\\fR") ==
+          "\033[1mbold\033[0m and \033[4mitalic\033[0m");
+}
+
+TEST_CASE("ansi::unescape converts groff hyphen to plain hyphen", "[manpage][ansi]") {
+  REQUIRE(ansi::unescape("\\-\\-verbose") == "--verbose");
+  REQUIRE(ansi::unescape("\\-v") == "-v");
+}
+
+TEST_CASE("ansi::unescape strips zero-width space", "[manpage][ansi]") {
+  REQUIRE(ansi::unescape("\\&.TH") == ".TH");
+}
+
+TEST_CASE("ansi::unescape converts escaped backslash", "[manpage][ansi]") {
+  REQUIRE(ansi::unescape("a\\\\b") == "a\\b");
+}
+
+TEST_CASE("ansi::unescape passes through plain text unchanged", "[manpage][ansi]") {
+  REQUIRE(ansi::unescape("hello world") == "hello world");
+  REQUIRE(ansi::unescape("") == "");
+}
+
+TEST_CASE("ansi::render_block ParagraphBlock produces indented ANSI text", "[manpage][ansi]") {
+  model::ParagraphBlock block{{"Use \\fB\\-\\-verbose\\fR for details."}};
+  REQUIRE(ansi::render_block(block) ==
+          "       Use \033[1m--verbose\033[0m for details.\n");
+}
+
+TEST_CASE("ansi::render_block ParagraphBlock with multi-line doc", "[manpage][ansi]") {
+  model::ParagraphBlock block{{"first line", "second line"}};
+  REQUIRE(ansi::render_block(block) == "       first line second line\n");
+}
+
+TEST_CASE("ansi::render_block LabelTextBlock produces ANSI label and description",
+          "[manpage][ansi]") {
+  model::LabelTextBlock block{"\\fB\\-\\-verbose\\fR, \\fB\\-v\\fR",
+                              {"Enable verbose output."}};
+  std::string expected = "       \033[1m--verbose\033[0m, \033[1m-v\033[0m\n"
+                         "           Enable verbose output.\n";
+  REQUIRE(ansi::render_block(block) == expected);
+}
+
+TEST_CASE("ansi::render_block PreBlock preserves lines with indentation", "[manpage][ansi]") {
+  model::PreBlock block{{"line one", "line two"}};
+  std::string expected = "       line one\n"
+                         "       line two\n";
+  REQUIRE(ansi::render_block(block) == expected);
+}
+
+TEST_CASE("ansi::render_block NoBlankBlock produces empty string", "[manpage][ansi]") {
+  model::NoBlankBlock block{};
+  REQUIRE(ansi::render_block(block) == "");
+}
+
+TEST_CASE("ansi::render_section wraps header in ANSI bold", "[manpage][ansi]") {
+  model::ManSection section{
+      "OPTIONS",
+      {model::LabelTextBlock{"\\fB\\-\\-verbose\\fR", {"Be verbose."}}},
+  };
+  auto output = ansi::render_section(section);
+  REQUIRE(output.find("\033[1mOPTIONS\033[0m\n") == 0);
+  REQUIRE(output.find("\033[1m--verbose\033[0m") != std::string::npos);
+}
+
+TEST_CASE("ansi::render_page produces all sections with ANSI bold headers", "[manpage][ansi]") {
+  std::vector<model::ManSection> sections = {
+      {"NAME", {model::ParagraphBlock{{"mytool \\- a tool"}}}},
+      {"OPTIONS", {model::LabelTextBlock{"\\fB\\-\\-help\\fR", {"Show help."}}}},
+  };
+  auto output = ansi::render_page("mytool", sections);
+  REQUIRE(output.find("\033[1mNAME\033[0m\n") != std::string::npos);
+  REQUIRE(output.find("\033[1mOPTIONS\033[0m\n") != std::string::npos);
+}
+
+TEST_CASE("to_ansi_text(root) produces ANSI output with bold headers and markers",
+          "[manpage][ansi]") {
+  model::Root root{};
+  root.name = "mytool";
+  root.doc = {"A simple tool."};
+  root.version = "1.0.0";
+
+  model::Flag flag{};
+  flag.names = {"v", "verbose"};
+  flag.doc = {"Enable verbose output."};
+
+  root.args = std::vector<model::Argument>{flag};
+
+  auto output = to_ansi_text(root);
+
+  // Section headers should be bold
+  REQUIRE(output.find("\033[1mNAME\033[0m\n") != std::string::npos);
+  REQUIRE(output.find("\033[1mSYNOPSIS\033[0m\n") != std::string::npos);
+  REQUIRE(output.find("\033[1mOPTIONS\033[0m\n") != std::string::npos);
+
+  // Groff font codes should be replaced with ANSI, not stripped
+  REQUIRE(output.find("\033[1m") != std::string::npos);
+  // No raw groff codes should remain
+  REQUIRE(output.find("\\fB") == std::string::npos);
+  REQUIRE(output.find("\\fR") == std::string::npos);
+  REQUIRE(output.find("\\fI") == std::string::npos);
+}
+
+TEST_CASE("to_ansi_text(root, {}) produces same output as to_ansi_text(root)",
+          "[manpage][ansi]") {
+  auto root = make_test_root();
+  auto by_root = to_ansi_text(root);
+  auto by_path = to_ansi_text(root, std::vector<std::string>{});
+  REQUIRE(by_root == by_path);
+}
+
+TEST_CASE("to_ansi_text(root, {\"build\"}) produces subcommand ANSI output",
+          "[manpage][ansi]") {
+  auto root = make_test_root();
+  auto output = to_ansi_text(root, {"build"});
+
+  REQUIRE(output.find("\033[1mNAME\033[0m\n") != std::string::npos);
+  REQUIRE(output.find("mytool-build") != std::string::npos);
+  REQUIRE(output.find("Build the project.") != std::string::npos);
+  REQUIRE(output.find("\033[1mOPTIONS\033[0m\n") != std::string::npos);
+
+  // No raw groff codes
+  REQUIRE(output.find("\\fB") == std::string::npos);
+  REQUIRE(output.find("\\fR") == std::string::npos);
+}

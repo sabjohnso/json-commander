@@ -16,6 +16,16 @@
 #include <string>
 #include <vector>
 
+#ifdef _WIN32
+#include <io.h>
+#define FAKEGIT_ISATTY(fd) _isatty(fd)
+#define FAKEGIT_STDOUT_FD _fileno(stdout)
+#else
+#include <unistd.h>
+#define FAKEGIT_ISATTY(fd) isatty(fd)
+#define FAKEGIT_STDOUT_FD STDOUT_FILENO
+#endif
+
 using namespace json_commander;
 
 // ---------------------------------------------------------------------------
@@ -44,7 +54,11 @@ run(const std::vector<std::string> &args) {
   }
 
   if (auto *help = std::get_if<parse::HelpRequest>(&result)) {
-    std::cout << manpage::to_plain_text(cli, help->command_path);
+    if (FAKEGIT_ISATTY(FAKEGIT_STDOUT_FD)) {
+      std::cout << manpage::to_ansi_text(cli, help->command_path);
+    } else {
+      std::cout << manpage::to_plain_text(cli, help->command_path);
+    }
     return 0;
   }
 

@@ -130,6 +130,129 @@ namespace json_commander::manpage {
   } // namespace detail
 
   // -------------------------------------------------------------------------
+  // Text rendering policies and templates
+  // -------------------------------------------------------------------------
+
+  namespace detail {
+
+    struct StripFont {
+      static void
+      on_bold(std::string & /*result*/) {}
+      static void
+      on_italic(std::string & /*result*/) {}
+      static void
+      on_reset(std::string & /*result*/) {}
+      static std::string
+      section_header(const std::string &name) {
+        return name + "\n";
+      }
+    };
+
+    struct AnsiFont {
+      static void
+      on_bold(std::string &result) {
+        result += "\033[1m";
+      }
+      static void
+      on_italic(std::string &result) {
+        result += "\033[4m";
+      }
+      static void
+      on_reset(std::string &result) {
+        result += "\033[0m";
+      }
+      static std::string
+      section_header(const std::string &name) {
+        return "\033[1m" + name + "\033[0m\n";
+      }
+    };
+
+    template <typename FontPolicy>
+    inline std::string
+    unescape_with(const std::string &text) {
+      std::string result;
+      result.reserve(text.size());
+      for (std::size_t i = 0; i < text.size(); ++i) {
+        if (text[i] == '\\' && i + 1 < text.size()) {
+          char next = text[i + 1];
+          if (next == 'f' && i + 2 < text.size()) {
+            char code = text[i + 2];
+            if (code == 'B') {
+              FontPolicy::on_bold(result);
+            } else if (code == 'I') {
+              FontPolicy::on_italic(result);
+            } else if (code == 'R') {
+              FontPolicy::on_reset(result);
+            }
+            i += 2;
+          } else if (next == '-') {
+            result += '-';
+            ++i;
+          } else if (next == '&') {
+            ++i;
+          } else if (next == '\\') {
+            result += '\\';
+            ++i;
+          } else {
+            result += text[i];
+          }
+        } else {
+          result += text[i];
+        }
+      }
+      return result;
+    }
+
+    template <typename FontPolicy>
+    inline std::string
+    render_block_with(const model::ManBlock &block) {
+      return std::visit(
+          [](const auto &b) -> std::string {
+            using T = std::decay_t<decltype(b)>;
+            if constexpr (std::is_same_v<T, model::ParagraphBlock>) {
+              return "       " + unescape_with<FontPolicy>(docstring_to_text(b.paragraph)) + "\n";
+            } else if constexpr (std::is_same_v<T, model::PreBlock>) {
+              std::string result;
+              for (const auto &line : b.pre) {
+                result += "       " + line + "\n";
+              }
+              return result;
+            } else if constexpr (std::is_same_v<T, model::LabelTextBlock>) {
+              std::string result;
+              result += "       " + unescape_with<FontPolicy>(b.label) + "\n";
+              result += "           " + unescape_with<FontPolicy>(docstring_to_text(b.text)) + "\n";
+              return result;
+            } else if constexpr (std::is_same_v<T, model::NoBlankBlock>) {
+              return "";
+            }
+          },
+          block);
+    }
+
+    template <typename FontPolicy>
+    inline std::string
+    render_section_with(const model::ManSection &section) {
+      std::string result = FontPolicy::section_header(section.name);
+      for (const auto &block : section.blocks) {
+        result += render_block_with<FontPolicy>(block);
+      }
+      result += "\n";
+      return result;
+    }
+
+    template <typename FontPolicy>
+    inline std::string
+    render_page_with(const std::string & /*name*/, const std::vector<model::ManSection> &sections) {
+      std::string result;
+      for (const auto &section : sections) {
+        result += render_section_with<FontPolicy>(section);
+      }
+      return result;
+    }
+
+  } // namespace detail
+
+  // -------------------------------------------------------------------------
   // Groff rendering
   // -------------------------------------------------------------------------
 
@@ -214,78 +337,53 @@ namespace json_commander::manpage {
 
     inline std::string
     unescape(const std::string &text) {
-      std::string result;
-      result.reserve(text.size());
-      for (std::size_t i = 0; i < text.size(); ++i) {
-        if (text[i] == '\\' && i + 1 < text.size()) {
-          char next = text[i + 1];
-          if (next == 'f' && i + 2 < text.size()) {
-            // \fB, \fR, \fI — font codes, skip all three characters
-            i += 2;
-          } else if (next == '-') {
-            result += '-';
-            ++i;
-          } else if (next == '&') {
-            // zero-width space — skip both characters
-            ++i;
-          } else if (next == '\\') {
-            result += '\\';
-            ++i;
-          } else {
-            result += text[i];
-          }
-        } else {
-          result += text[i];
-        }
-      }
-      return result;
+      return detail::unescape_with<detail::StripFont>(text);
     }
 
     inline std::string
     render_block(const model::ManBlock &block) {
-      return std::visit(
-          [](const auto &b) -> std::string {
-            using T = std::decay_t<decltype(b)>;
-            if constexpr (std::is_same_v<T, model::ParagraphBlock>) {
-              return "       " + unescape(detail::docstring_to_text(b.paragraph)) + "\n";
-            } else if constexpr (std::is_same_v<T, model::PreBlock>) {
-              std::string result;
-              for (const auto &line : b.pre) {
-                result += "       " + line + "\n";
-              }
-              return result;
-            } else if constexpr (std::is_same_v<T, model::LabelTextBlock>) {
-              std::string result;
-              result += "       " + unescape(b.label) + "\n";
-              result += "           " + unescape(detail::docstring_to_text(b.text)) + "\n";
-              return result;
-            } else if constexpr (std::is_same_v<T, model::NoBlankBlock>) {
-              return "";
-            }
-          },
-          block);
+      return detail::render_block_with<detail::StripFont>(block);
     }
 
     inline std::string
     render_section(const model::ManSection &section) {
-      std::string result = section.name + "\n";
-      for (const auto &block : section.blocks) {
-        result += render_block(block);
-      }
-      result += "\n";
-      return result;
+      return detail::render_section_with<detail::StripFont>(section);
     }
 
     inline std::string
-    render_page(const std::string & /*name*/, const std::vector<model::ManSection> &sections) {
-      std::string result;
-      for (const auto &section : sections) {
-        result += render_section(section);
-      }
-      return result;
+    render_page(const std::string &name, const std::vector<model::ManSection> &sections) {
+      return detail::render_page_with<detail::StripFont>(name, sections);
     }
 
   } // namespace plain
+
+  // -------------------------------------------------------------------------
+  // ANSI-text rendering (for interactive terminals)
+  // -------------------------------------------------------------------------
+
+  namespace ansi {
+
+    inline std::string
+    unescape(const std::string &text) {
+      return detail::unescape_with<detail::AnsiFont>(text);
+    }
+
+    inline std::string
+    render_block(const model::ManBlock &block) {
+      return detail::render_block_with<detail::AnsiFont>(block);
+    }
+
+    inline std::string
+    render_section(const model::ManSection &section) {
+      return detail::render_section_with<detail::AnsiFont>(section);
+    }
+
+    inline std::string
+    render_page(const std::string &name, const std::vector<model::ManSection> &sections) {
+      return detail::render_page_with<detail::AnsiFont>(name, sections);
+    }
+
+  } // namespace ansi
 
   // -------------------------------------------------------------------------
   // Argument section generation
@@ -678,6 +776,42 @@ namespace json_commander::manpage {
     }
 
     return to_plain_text(cmd, full_name, syn_name);
+  }
+
+  // -------------------------------------------------------------------------
+  // Convenience: assemble + ANSI-text render
+  // -------------------------------------------------------------------------
+
+  inline std::string
+  to_ansi_text(const model::Root &root) {
+    auto sections = assemble(root, root.name);
+    return ansi::render_page(root.name, sections);
+  }
+
+  inline std::string
+  to_ansi_text(const model::Command &cmd,
+               const std::string &full_name,
+               const std::string &synopsis_name = "") {
+    auto sections = assemble(cmd, full_name, synopsis_name);
+    return ansi::render_page(full_name, sections);
+  }
+
+  inline std::string
+  to_ansi_text(const model::Root &root, const std::vector<std::string> &command_path) {
+    if (command_path.empty()) {
+      return to_ansi_text(root);
+    }
+
+    const auto &cmd = find_command(root, command_path);
+
+    std::string full_name = root.name;
+    std::string syn_name = root.name;
+    for (const auto &segment : command_path) {
+      full_name += "-" + segment;
+      syn_name += " " + segment;
+    }
+
+    return to_ansi_text(cmd, full_name, syn_name);
   }
 
 } // namespace json_commander::manpage

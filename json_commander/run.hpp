@@ -11,6 +11,18 @@
 #include <string>
 #include <vector>
 
+#ifdef _WIN32
+#include <io.h>
+#define JCMD_ISATTY(fd) _isatty(fd)
+#define JCMD_STDOUT_FD _fileno(stdout)
+#define JCMD_STDERR_FD _fileno(stderr)
+#else
+#include <unistd.h>
+#define JCMD_ISATTY(fd) isatty(fd)
+#define JCMD_STDOUT_FD STDOUT_FILENO
+#define JCMD_STDERR_FD STDERR_FILENO
+#endif
+
 namespace json_commander {
 
   using MainFn = std::function<int(const nlohmann::json &config)>;
@@ -35,7 +47,11 @@ namespace json_commander {
       result = parse::parse(spec, args);
     } catch (const parse::Error &e) {
       std::cerr << name << ": " << e.what() << "\n";
-      std::cerr << manpage::to_plain_text(root, {});
+      if (JCMD_ISATTY(JCMD_STDERR_FD)) {
+        std::cerr << manpage::to_ansi_text(root, {});
+      } else {
+        std::cerr << manpage::to_plain_text(root, {});
+      }
       return 1;
     }
 
@@ -46,7 +62,11 @@ namespace json_commander {
           if constexpr (std::is_same_v<T, parse::ParseOk>) {
             return main_fn(r.config);
           } else if constexpr (std::is_same_v<T, parse::HelpRequest>) {
-            std::cout << manpage::to_plain_text(root, r.command_path);
+            if (JCMD_ISATTY(JCMD_STDOUT_FD)) {
+              std::cout << manpage::to_ansi_text(root, r.command_path);
+            } else {
+              std::cout << manpage::to_plain_text(root, r.command_path);
+            }
             return 0;
           } else if constexpr (std::is_same_v<T, parse::VersionRequest>) {
             std::cout << name << " version";
