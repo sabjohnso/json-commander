@@ -3,11 +3,15 @@
 namespace json_commander::Config
 {
   struct Info {
-    static constexpr char name[] = ${PROJECT_NAME};
+    static constexpr char name[] = "${PROJECT_NAME}";
     struct Version {
       static constexpr int major = ${PROJECT_VERSION_MAJOR};
       static constexpr int minor = ${PROJECT_VERSION_MINOR};
       static constexpr int patch = ${PROJECT_VERSION_PATCH};
+    };
+    struct Paths {
+      static constexpr char schema_dir[] = "${JSON_COMMANDER_SCHEMA_DIR}";
+      static constexpr char tool_schema[] = "${JSON_COMMANDER_TOOL_SCHEMA}";
     };
     struct Compilers
     {
@@ -26,7 +30,7 @@ namespace json_commander::Config
         static constexpr char cmake_cxx_flags_debug [] = "${CMAKE_CXX_FLAGS_DEBUG}";
         static constexpr char cmake_cxx_flags_relwithdebinfo [] = "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}";
         static constexpr char cmake_cxx_flags_minsizerel [] = "${CMAKE_CXX_FLAGS_MINSIZEREL}";
-      }
+      };
     };
   };
 } // end of namespace json_commander::Config

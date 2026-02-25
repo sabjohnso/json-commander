@@ -1,3 +1,4 @@
-json_commander_add_example(serve)
-target_compile_definitions(serve PRIVATE
-  SERVE_SCHEMA="${CMAKE_CURRENT_SOURCE_DIR}/serve.json")
+json_commander_add_executable(serve
+  SCHEMA serve.json
+  MAIN serve::run
+  FROM_HEADER serve_main.hpp)

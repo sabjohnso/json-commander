@@ -219,6 +219,6 @@ TEST_CASE("load(path) with valid file returns Root", "[schema_loader]") {
 TEST_CASE("load(path) rejects metaschema file as invalid CLI schema", "[schema_loader]") {
   Loader loader;
   std::string metaschema_path =
-      std::string(JSON_COMMANDER_SCHEMA_DIR) + "/json_commander.schema.json";
+      std::string(json_commander::Config::Info::Paths::schema_dir) + "/json_commander.schema.json";
   REQUIRE_THROWS_AS(loader.load(metaschema_path), Error);
 }
