@@ -221,8 +221,8 @@ namespace json_commander::parse {
             continue;
           }
 
-          // Check for --help
-          if (token == "--help") {
+          // Check for --help / -h
+          if (token == "--help" || token == "-h") {
             return HelpRequest{command_path};
           }
 

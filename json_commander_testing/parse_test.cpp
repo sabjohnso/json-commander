@@ -737,6 +737,31 @@ TEST_CASE("parse: --help returns HelpRequest with empty path", "[parse][phase10]
   REQUIRE(std::get<parse::HelpRequest>(result).command_path.empty());
 }
 
+TEST_CASE("parse: -h returns HelpRequest with empty path", "[parse][phase10]") {
+  auto root = make_root("tool");
+  auto result = parse::parse(root, {"-h"}, parse::no_env());
+  REQUIRE(std::holds_alternative<parse::HelpRequest>(result));
+  REQUIRE(std::get<parse::HelpRequest>(result).command_path.empty());
+}
+
+TEST_CASE("parse: -h after subcommand returns HelpRequest with path", "[parse][phase10]") {
+  auto root = make_root("tool");
+  root.commands = {make_command("build")};
+  auto result = parse::parse(root, {"build", "-h"}, parse::no_env());
+  REQUIRE(std::holds_alternative<parse::HelpRequest>(result));
+  REQUIRE(std::get<parse::HelpRequest>(result).command_path ==
+          std::vector<std::string>{"build"});
+}
+
+TEST_CASE("parse: -h short-circuits (no validation)", "[parse][phase10]") {
+  auto root = make_root("tool");
+  auto opt = make_option({"required-opt"});
+  opt.validator = validate::required();
+  root.args = {arg::ArgSpec{opt}};
+  auto result = parse::parse(root, {"-h"}, parse::no_env());
+  REQUIRE(std::holds_alternative<parse::HelpRequest>(result));
+}
+
 TEST_CASE("parse: --help after subcommand returns HelpRequest with path", "[parse][phase10]") {
   auto root = make_root("tool");
   root.commands = {make_command("build")};
