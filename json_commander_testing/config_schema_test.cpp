@@ -10,131 +10,140 @@ using json = nlohmann::json;
 
 namespace {
 
-model::Flag
-make_flag(model::ArgNames names) {
-  model::Flag f{};
-  f.names = std::move(names);
-  f.doc = {"doc"};
-  return f;
-}
+  model::Flag
+  make_flag(model::ArgNames names) {
+    model::Flag f{};
+    f.names = std::move(names);
+    f.doc = {"doc"};
+    return f;
+  }
 
-model::Flag
-make_flag_with_dest(model::ArgNames names, std::string dest) {
-  auto f = make_flag(std::move(names));
-  f.dest = std::move(dest);
-  return f;
-}
+  model::Flag
+  make_flag_with_dest(model::ArgNames names, std::string dest) {
+    auto f = make_flag(std::move(names));
+    f.dest = std::move(dest);
+    return f;
+  }
 
-model::Flag
-make_flag_repeated(model::ArgNames names) {
-  auto f = make_flag(std::move(names));
-  f.repeated = true;
-  return f;
-}
+  model::Flag
+  make_flag_repeated(model::ArgNames names) {
+    auto f = make_flag(std::move(names));
+    f.repeated = true;
+    return f;
+  }
 
-model::Option
-make_option(model::ArgNames names, model::TypeSpec type) {
-  model::Option opt{};
-  opt.names = std::move(names);
-  opt.doc = {"doc"};
-  opt.type = std::move(type);
-  return opt;
-}
+  model::Option
+  make_option(model::ArgNames names, model::TypeSpec type) {
+    model::Option opt{};
+    opt.names = std::move(names);
+    opt.doc = {"doc"};
+    opt.type = std::move(type);
+    return opt;
+  }
 
-model::Option
-make_option_with_dest(model::ArgNames names, model::TypeSpec type, std::string dest) {
-  auto opt = make_option(std::move(names), std::move(type));
-  opt.dest = std::move(dest);
-  return opt;
-}
+  model::Option
+  make_option_with_dest(
+    model::ArgNames names, model::TypeSpec type, std::string dest) {
+    auto opt = make_option(std::move(names), std::move(type));
+    opt.dest = std::move(dest);
+    return opt;
+  }
 
-model::Option
-make_option_repeated(model::ArgNames names, model::TypeSpec type) {
-  auto opt = make_option(std::move(names), std::move(type));
-  opt.repeated = true;
-  return opt;
-}
+  model::Option
+  make_option_repeated(model::ArgNames names, model::TypeSpec type) {
+    auto opt = make_option(std::move(names), std::move(type));
+    opt.repeated = true;
+    return opt;
+  }
 
-model::Option
-make_option_with_choices(model::ArgNames names,
-                         model::TypeSpec type,
-                         std::vector<std::string> choices) {
-  auto opt = make_option(std::move(names), std::move(type));
-  opt.choices = std::move(choices);
-  return opt;
-}
+  model::Option
+  make_option_with_choices(
+    model::ArgNames names,
+    model::TypeSpec type,
+    std::vector<std::string> choices) {
+    auto opt = make_option(std::move(names), std::move(type));
+    opt.choices = std::move(choices);
+    return opt;
+  }
 
-model::Option
-make_option_required(model::ArgNames names, model::TypeSpec type) {
-  auto opt = make_option(std::move(names), std::move(type));
-  opt.required = true;
-  return opt;
-}
+  model::Option
+  make_option_required(model::ArgNames names, model::TypeSpec type) {
+    auto opt = make_option(std::move(names), std::move(type));
+    opt.required = true;
+    return opt;
+  }
 
-model::Option
-make_option_with_default(model::ArgNames names, model::TypeSpec type, json default_value) {
-  auto opt = make_option(std::move(names), std::move(type));
-  opt.default_value = std::move(default_value);
-  return opt;
-}
+  model::Option
+  make_option_with_default(
+    model::ArgNames names, model::TypeSpec type, json default_value) {
+    auto opt = make_option(std::move(names), std::move(type));
+    opt.default_value = std::move(default_value);
+    return opt;
+  }
 
-model::Positional
-make_positional(std::string name, model::TypeSpec type) {
-  model::Positional pos{};
-  pos.name = std::move(name);
-  pos.doc = {"doc"};
-  pos.type = std::move(type);
-  return pos;
-}
+  model::Positional
+  make_positional(std::string name, model::TypeSpec type) {
+    model::Positional pos{};
+    pos.name = std::move(name);
+    pos.doc = {"doc"};
+    pos.type = std::move(type);
+    return pos;
+  }
 
-model::Positional
-make_positional_repeated(std::string name, model::TypeSpec type) {
-  auto pos = make_positional(std::move(name), std::move(type));
-  pos.repeated = true;
-  return pos;
-}
+  model::Positional
+  make_positional_repeated(std::string name, model::TypeSpec type) {
+    auto pos = make_positional(std::move(name), std::move(type));
+    pos.repeated = true;
+    return pos;
+  }
 
-model::Positional
-make_positional_required(std::string name, model::TypeSpec type) {
-  auto pos = make_positional(std::move(name), std::move(type));
-  pos.required = true;
-  return pos;
-}
+  model::Positional
+  make_positional_required(std::string name, model::TypeSpec type) {
+    auto pos = make_positional(std::move(name), std::move(type));
+    pos.required = true;
+    return pos;
+  }
 
-model::Positional
-make_positional_with_default(std::string name, model::TypeSpec type, json default_value) {
-  auto pos = make_positional(std::move(name), std::move(type));
-  pos.default_value = std::move(default_value);
-  return pos;
-}
+  model::Positional
+  make_positional_with_default(
+    std::string name, model::TypeSpec type, json default_value) {
+    auto pos = make_positional(std::move(name), std::move(type));
+    pos.default_value = std::move(default_value);
+    return pos;
+  }
 
-model::FlagGroupEntry
-make_flag_group_entry(model::ArgNames names, json value) {
-  model::FlagGroupEntry e{};
-  e.names = std::move(names);
-  e.doc = {"doc"};
-  e.value = std::move(value);
-  return e;
-}
+  model::FlagGroupEntry
+  make_flag_group_entry(model::ArgNames names, json value) {
+    model::FlagGroupEntry e{};
+    e.names = std::move(names);
+    e.doc = {"doc"};
+    e.value = std::move(value);
+    return e;
+  }
 
-model::FlagGroup
-make_flag_group(std::string dest, json default_value, std::vector<model::FlagGroupEntry> flags) {
-  model::FlagGroup g{};
-  g.dest = std::move(dest);
-  g.doc = {"doc"};
-  g.default_value = std::move(default_value);
-  g.flags = std::move(flags);
-  return g;
-}
+  model::FlagGroup
+  make_flag_group(
+    std::string dest,
+    json default_value,
+    std::vector<model::FlagGroupEntry> flags) {
+    model::FlagGroup g{};
+    g.dest = std::move(dest);
+    g.doc = {"doc"};
+    g.default_value = std::move(default_value);
+    g.flags = std::move(flags);
+    return g;
+  }
 
-model::FlagGroup
-make_flag_group_repeated(std::string dest,
-                         json default_value,
-                         std::vector<model::FlagGroupEntry> flags) {
-  auto g = make_flag_group(std::move(dest), std::move(default_value), std::move(flags));
-  g.repeated = true;
-  return g;
-}
+  model::FlagGroup
+  make_flag_group_repeated(
+    std::string dest,
+    json default_value,
+    std::vector<model::FlagGroupEntry> flags) {
+    auto g = make_flag_group(
+      std::move(dest), std::move(default_value), std::move(flags));
+    g.repeated = true;
+    return g;
+  }
 
 } // namespace
 
@@ -142,57 +151,80 @@ make_flag_group_repeated(std::string dest,
 // Phase 1: scalar_type_schema
 // ---------------------------------------------------------------------------
 
-TEST_CASE("scalar_type_schema: String maps to {type: string}", "[config_schema]") {
-  auto result = config_schema::detail::scalar_type_schema(model::ScalarType::String);
+TEST_CASE(
+  "scalar_type_schema: String maps to {type: string}", "[config_schema]") {
+  auto result =
+    config_schema::detail::scalar_type_schema(model::ScalarType::String);
   REQUIRE(result == json({{"type", "string"}}));
 }
 
-TEST_CASE("scalar_type_schema: Int maps to {type: integer}", "[config_schema]") {
-  auto result = config_schema::detail::scalar_type_schema(model::ScalarType::Int);
+TEST_CASE(
+  "scalar_type_schema: Int maps to {type: integer}", "[config_schema]") {
+  auto result =
+    config_schema::detail::scalar_type_schema(model::ScalarType::Int);
   REQUIRE(result == json({{"type", "integer"}}));
 }
 
-TEST_CASE("scalar_type_schema: Float maps to {type: number}", "[config_schema]") {
-  auto result = config_schema::detail::scalar_type_schema(model::ScalarType::Float);
+TEST_CASE(
+  "scalar_type_schema: Float maps to {type: number}", "[config_schema]") {
+  auto result =
+    config_schema::detail::scalar_type_schema(model::ScalarType::Float);
   REQUIRE(result == json({{"type", "number"}}));
 }
 
-TEST_CASE("scalar_type_schema: Bool maps to {type: boolean}", "[config_schema]") {
-  auto result = config_schema::detail::scalar_type_schema(model::ScalarType::Bool);
+TEST_CASE(
+  "scalar_type_schema: Bool maps to {type: boolean}", "[config_schema]") {
+  auto result =
+    config_schema::detail::scalar_type_schema(model::ScalarType::Bool);
   REQUIRE(result == json({{"type", "boolean"}}));
 }
 
-TEST_CASE("scalar_type_schema: File maps to {type: string}", "[config_schema]") {
-  auto result = config_schema::detail::scalar_type_schema(model::ScalarType::File);
+TEST_CASE(
+  "scalar_type_schema: File maps to {type: string}", "[config_schema]") {
+  auto result =
+    config_schema::detail::scalar_type_schema(model::ScalarType::File);
   REQUIRE(result == json({{"type", "string"}}));
 }
 
 TEST_CASE("scalar_type_schema: Dir maps to {type: string}", "[config_schema]") {
-  auto result = config_schema::detail::scalar_type_schema(model::ScalarType::Dir);
+  auto result =
+    config_schema::detail::scalar_type_schema(model::ScalarType::Dir);
   REQUIRE(result == json({{"type", "string"}}));
 }
 
-TEST_CASE("scalar_type_schema: Path maps to {type: string}", "[config_schema]") {
-  auto result = config_schema::detail::scalar_type_schema(model::ScalarType::Path);
+TEST_CASE(
+  "scalar_type_schema: Path maps to {type: string}", "[config_schema]") {
+  auto result =
+    config_schema::detail::scalar_type_schema(model::ScalarType::Path);
   REQUIRE(result == json({{"type", "string"}}));
 }
 
-TEST_CASE("scalar_type_schema: Enum without choices maps to {type: string}", "[config_schema]") {
-  auto result = config_schema::detail::scalar_type_schema(model::ScalarType::Enum);
+TEST_CASE(
+  "scalar_type_schema: Enum without choices maps to {type: string}",
+  "[config_schema]") {
+  auto result =
+    config_schema::detail::scalar_type_schema(model::ScalarType::Enum);
   REQUIRE(result == json({{"type", "string"}}));
 }
 
-TEST_CASE("scalar_type_schema: Enum with choices produces enum array", "[config_schema]") {
+TEST_CASE(
+  "scalar_type_schema: Enum with choices produces enum array",
+  "[config_schema]") {
   std::vector<std::string> choices = {"debug", "release", "profile"};
-  auto result = config_schema::detail::scalar_type_schema(model::ScalarType::Enum, choices);
-  REQUIRE(result == json({{"type", "string"}, {"enum", {"debug", "release", "profile"}}}));
+  auto result =
+    config_schema::detail::scalar_type_schema(model::ScalarType::Enum, choices);
+  REQUIRE(
+    result ==
+    json({{"type", "string"}, {"enum", {"debug", "release", "profile"}}}));
 }
 
 // ---------------------------------------------------------------------------
 // Phase 2: type_spec_schema
 // ---------------------------------------------------------------------------
 
-TEST_CASE("type_spec_schema: scalar delegates to scalar_type_schema", "[config_schema]") {
+TEST_CASE(
+  "type_spec_schema: scalar delegates to scalar_type_schema",
+  "[config_schema]") {
   model::TypeSpec ts = model::ScalarType::Int;
   auto result = config_schema::detail::type_spec_schema(ts);
   REQUIRE(result == json({{"type", "integer"}}));
@@ -205,7 +237,8 @@ TEST_CASE("type_spec_schema: scalar with choices", "[config_schema]") {
   REQUIRE(result == json({{"type", "string"}, {"enum", {"a", "b"}}}));
 }
 
-TEST_CASE("type_spec_schema: ListType produces array with items", "[config_schema]") {
+TEST_CASE(
+  "type_spec_schema: ListType produces array with items", "[config_schema]") {
   model::ListType lt{};
   lt.element = model::ScalarType::String;
   model::TypeSpec ts = lt;
@@ -213,21 +246,25 @@ TEST_CASE("type_spec_schema: ListType produces array with items", "[config_schem
   REQUIRE(result == json({{"type", "array"}, {"items", {{"type", "string"}}}}));
 }
 
-TEST_CASE("type_spec_schema: PairType produces tuple with prefixItems", "[config_schema]") {
+TEST_CASE(
+  "type_spec_schema: PairType produces tuple with prefixItems",
+  "[config_schema]") {
   model::PairType pt{};
   pt.first = model::ScalarType::String;
   pt.second = model::ScalarType::Int;
   model::TypeSpec ts = pt;
   auto result = config_schema::detail::type_spec_schema(ts);
-  json expected = {{"type", "array"},
-                   {"prefixItems", {{{"type", "string"}}, {{"type", "integer"}}}},
-                   {"items", false},
-                   {"minItems", 2},
-                   {"maxItems", 2}};
+  json expected = {
+    {"type", "array"},
+    {"prefixItems", {{{"type", "string"}}, {{"type", "integer"}}}},
+    {"items", false},
+    {"minItems", 2},
+    {"maxItems", 2}};
   REQUIRE(result == expected);
 }
 
-TEST_CASE("type_spec_schema: TripleType produces 3-element tuple", "[config_schema]") {
+TEST_CASE(
+  "type_spec_schema: TripleType produces 3-element tuple", "[config_schema]") {
   model::TripleType tt{};
   tt.first = model::ScalarType::Int;
   tt.second = model::ScalarType::Float;
@@ -235,11 +272,12 @@ TEST_CASE("type_spec_schema: TripleType produces 3-element tuple", "[config_sche
   model::TypeSpec ts = tt;
   auto result = config_schema::detail::type_spec_schema(ts);
   json expected = {
-      {"type", "array"},
-      {"prefixItems", {{{"type", "integer"}}, {{"type", "number"}}, {{"type", "boolean"}}}},
-      {"items", false},
-      {"minItems", 3},
-      {"maxItems", 3}};
+    {"type", "array"},
+    {"prefixItems",
+     {{{"type", "integer"}}, {{"type", "number"}}, {{"type", "boolean"}}}},
+    {"items", false},
+    {"minItems", 3},
+    {"maxItems", 3}};
   REQUIRE(result == expected);
 }
 
@@ -247,7 +285,8 @@ TEST_CASE("type_spec_schema: TripleType produces 3-element tuple", "[config_sche
 // Phase 3: arg_schema
 // ---------------------------------------------------------------------------
 
-TEST_CASE("arg_schema: Flag produces boolean with resolved dest", "[config_schema]") {
+TEST_CASE(
+  "arg_schema: Flag produces boolean with resolved dest", "[config_schema]") {
   model::Argument arg = make_flag({"v", "verbose"});
   auto [dest, schema] = config_schema::detail::arg_schema(arg);
   REQUIRE(dest == "verbose");
@@ -261,7 +300,9 @@ TEST_CASE("arg_schema: Flag with explicit dest", "[config_schema]") {
   REQUIRE(schema == json({{"type", "boolean"}}));
 }
 
-TEST_CASE("arg_schema: Flag repeated produces integer with minimum 0", "[config_schema]") {
+TEST_CASE(
+  "arg_schema: Flag repeated produces integer with minimum 0",
+  "[config_schema]") {
   model::Argument arg = make_flag_repeated({"v", "verbose"});
   auto [dest, schema] = config_schema::detail::arg_schema(arg);
   REQUIRE(dest == "verbose");
@@ -276,25 +317,28 @@ TEST_CASE("arg_schema: Option maps to type_spec_schema", "[config_schema]") {
 }
 
 TEST_CASE("arg_schema: Option with explicit dest", "[config_schema]") {
-  model::Argument arg =
-      make_option_with_dest({"o", "output"}, model::ScalarType::String, "out_file");
+  model::Argument arg = make_option_with_dest(
+    {"o", "output"}, model::ScalarType::String, "out_file");
   auto [dest, schema] = config_schema::detail::arg_schema(arg);
   REQUIRE(dest == "out_file");
 }
 
 TEST_CASE("arg_schema: Option repeated wraps in array", "[config_schema]") {
-  model::Argument arg = make_option_repeated({"i", "include"}, model::ScalarType::String);
+  model::Argument arg =
+    make_option_repeated({"i", "include"}, model::ScalarType::String);
   auto [dest, schema] = config_schema::detail::arg_schema(arg);
   REQUIRE(dest == "include");
   REQUIRE(schema == json({{"type", "array"}, {"items", {{"type", "string"}}}}));
 }
 
-TEST_CASE("arg_schema: Option with choices passes through to type", "[config_schema]") {
-  model::Argument arg =
-      make_option_with_choices({"l", "level"}, model::ScalarType::Enum, {"info", "warn", "error"});
+TEST_CASE(
+  "arg_schema: Option with choices passes through to type", "[config_schema]") {
+  model::Argument arg = make_option_with_choices(
+    {"l", "level"}, model::ScalarType::Enum, {"info", "warn", "error"});
   auto [dest, schema] = config_schema::detail::arg_schema(arg);
   REQUIRE(dest == "level");
-  REQUIRE(schema == json({{"type", "string"}, {"enum", {"info", "warn", "error"}}}));
+  REQUIRE(
+    schema == json({{"type", "string"}, {"enum", {"info", "warn", "error"}}}));
 }
 
 TEST_CASE("arg_schema: Positional uses name as dest", "[config_schema]") {
@@ -305,18 +349,19 @@ TEST_CASE("arg_schema: Positional uses name as dest", "[config_schema]") {
 }
 
 TEST_CASE("arg_schema: Positional repeated wraps in array", "[config_schema]") {
-  model::Argument arg = make_positional_repeated("files", model::ScalarType::File);
+  model::Argument arg =
+    make_positional_repeated("files", model::ScalarType::File);
   auto [dest, schema] = config_schema::detail::arg_schema(arg);
   REQUIRE(dest == "files");
   REQUIRE(schema == json({{"type", "array"}, {"items", {{"type", "string"}}}}));
 }
 
 TEST_CASE("arg_schema: FlagGroup uses group.dest", "[config_schema]") {
-  model::Argument arg =
-      make_flag_group("format",
-                      "text",
-                      {make_flag_group_entry({"json"}, "json"),
-                       make_flag_group_entry({"text"}, "text")});
+  model::Argument arg = make_flag_group(
+    "format",
+    "text",
+    {make_flag_group_entry({"json"}, "json"),
+     make_flag_group_entry({"text"}, "text")});
   auto [dest, schema] = config_schema::detail::arg_schema(arg);
   REQUIRE(dest == "format");
   REQUIRE(schema == json::object());
@@ -324,13 +369,14 @@ TEST_CASE("arg_schema: FlagGroup uses group.dest", "[config_schema]") {
 
 TEST_CASE("arg_schema: FlagGroup repeated wraps in array", "[config_schema]") {
   model::Argument arg = make_flag_group_repeated(
-      "tags", json::array(), {make_flag_group_entry({"alpha"}, "a")});
+    "tags", json::array(), {make_flag_group_entry({"alpha"}, "a")});
   auto [dest, schema] = config_schema::detail::arg_schema(arg);
   REQUIRE(dest == "tags");
   REQUIRE(schema == json({{"type", "array"}}));
 }
 
-TEST_CASE("arg_schema: Flag single short name uses it as dest", "[config_schema]") {
+TEST_CASE(
+  "arg_schema: Flag single short name uses it as dest", "[config_schema]") {
   model::Argument arg = make_flag({"v"});
   auto [dest, schema] = config_schema::detail::arg_schema(arg);
   REQUIRE(dest == "v");
@@ -341,51 +387,62 @@ TEST_CASE("arg_schema: Flag single short name uses it as dest", "[config_schema]
 // Phase 4: is_required
 // ---------------------------------------------------------------------------
 
-TEST_CASE("is_required: Flag is always required (defaults to false)", "[config_schema]") {
+TEST_CASE(
+  "is_required: Flag is always required (defaults to false)",
+  "[config_schema]") {
   model::Argument arg = make_flag({"verbose"});
   REQUIRE(config_schema::detail::is_required(arg));
 }
 
-TEST_CASE("is_required: Flag repeated is always required (defaults to 0)", "[config_schema]") {
+TEST_CASE(
+  "is_required: Flag repeated is always required (defaults to 0)",
+  "[config_schema]") {
   model::Argument arg = make_flag_repeated({"v", "verbose"});
   REQUIRE(config_schema::detail::is_required(arg));
 }
 
-TEST_CASE("is_required: FlagGroup is always required (has default_value)", "[config_schema]") {
-  model::Argument arg =
-      make_flag_group("format", "text", {make_flag_group_entry({"json"}, "json")});
+TEST_CASE(
+  "is_required: FlagGroup is always required (has default_value)",
+  "[config_schema]") {
+  model::Argument arg = make_flag_group(
+    "format", "text", {make_flag_group_entry({"json"}, "json")});
   REQUIRE(config_schema::detail::is_required(arg));
 }
 
 TEST_CASE("is_required: Option with required=true", "[config_schema]") {
-  model::Argument arg = make_option_required({"output"}, model::ScalarType::String);
+  model::Argument arg =
+    make_option_required({"output"}, model::ScalarType::String);
   REQUIRE(config_schema::detail::is_required(arg));
 }
 
 TEST_CASE("is_required: Option with default_value", "[config_schema]") {
   model::Argument arg =
-      make_option_with_default({"output"}, model::ScalarType::String, "out.txt");
+    make_option_with_default({"output"}, model::ScalarType::String, "out.txt");
   REQUIRE(config_schema::detail::is_required(arg));
 }
 
-TEST_CASE("is_required: Option without required or default is not required", "[config_schema]") {
+TEST_CASE(
+  "is_required: Option without required or default is not required",
+  "[config_schema]") {
   model::Argument arg = make_option({"output"}, model::ScalarType::String);
   REQUIRE_FALSE(config_schema::detail::is_required(arg));
 }
 
 TEST_CASE("is_required: Positional with required=true", "[config_schema]") {
-  model::Argument arg = make_positional_required("file", model::ScalarType::File);
+  model::Argument arg =
+    make_positional_required("file", model::ScalarType::File);
   REQUIRE(config_schema::detail::is_required(arg));
 }
 
 TEST_CASE("is_required: Positional with default_value", "[config_schema]") {
-  model::Argument arg =
-      make_positional_with_default("file", model::ScalarType::File, "default.txt");
+  model::Argument arg = make_positional_with_default(
+    "file", model::ScalarType::File, "default.txt");
   REQUIRE(config_schema::detail::is_required(arg));
 }
 
-TEST_CASE("is_required: Positional without required or default is not required",
-          "[config_schema]") {
+TEST_CASE(
+  "is_required: Positional without required or default is not required",
+  "[config_schema]") {
   model::Argument arg = make_positional("file", model::ScalarType::File);
   REQUIRE_FALSE(config_schema::detail::is_required(arg));
 }
@@ -396,16 +453,14 @@ TEST_CASE("is_required: Positional without required or default is not required",
 
 namespace {
 
-model::Root
-make_root(std::string name, std::vector<model::Argument> args = {}) {
-  model::Root r{};
-  r.name = std::move(name);
-  r.doc = {"A test program"};
-  if (!args.empty()) {
-    r.args = std::move(args);
+  model::Root
+  make_root(std::string name, std::vector<model::Argument> args = {}) {
+    model::Root r{};
+    r.name = std::move(name);
+    r.doc = {"A test program"};
+    if (!args.empty()) { r.args = std::move(args); }
+    return r;
   }
-  return r;
-}
 
 } // namespace
 
@@ -421,7 +476,9 @@ TEST_CASE("generate: empty args produces minimal schema", "[config_schema]") {
   REQUIRE(schema["required"] == json::array());
 }
 
-TEST_CASE("generate: single flag produces correct property and required", "[config_schema]") {
+TEST_CASE(
+  "generate: single flag produces correct property and required",
+  "[config_schema]") {
   auto root = make_root("mytool", {make_flag({"verbose"})});
   auto schema = config_schema::detail::generate(*root.args, "mytool");
   REQUIRE(schema["properties"]["verbose"] == json({{"type", "boolean"}}));
@@ -429,8 +486,10 @@ TEST_CASE("generate: single flag produces correct property and required", "[conf
   REQUIRE(std::find(req.begin(), req.end(), "verbose") != req.end());
 }
 
-TEST_CASE("generate: optional argument not in required list", "[config_schema]") {
-  auto root = make_root("mytool", {make_option({"output"}, model::ScalarType::String)});
+TEST_CASE(
+  "generate: optional argument not in required list", "[config_schema]") {
+  auto root =
+    make_root("mytool", {make_option({"output"}, model::ScalarType::String)});
   auto schema = config_schema::detail::generate(*root.args, "mytool");
   REQUIRE(schema["properties"].contains("output"));
   auto req = schema["required"].get<std::vector<std::string>>();
@@ -439,10 +498,10 @@ TEST_CASE("generate: optional argument not in required list", "[config_schema]")
 
 TEST_CASE("generate: mixed required and optional args", "[config_schema]") {
   auto root = make_root(
-      "mytool",
-      {make_flag({"verbose"}),
-       make_option({"output"}, model::ScalarType::String),
-       make_option_required({"input"}, model::ScalarType::File)});
+    "mytool",
+    {make_flag({"verbose"}),
+     make_option({"output"}, model::ScalarType::String),
+     make_option_required({"input"}, model::ScalarType::File)});
   auto schema = config_schema::detail::generate(*root.args, "mytool");
   REQUIRE(schema["properties"].contains("verbose"));
   REQUIRE(schema["properties"].contains("output"));
@@ -459,25 +518,24 @@ TEST_CASE("generate: mixed required and optional args", "[config_schema]") {
 
 namespace {
 
-model::Command
-make_command(std::string name, std::vector<model::Argument> args = {}) {
-  model::Command c{};
-  c.name = std::move(name);
-  c.doc = {"A test command"};
-  if (!args.empty()) {
-    c.args = std::move(args);
+  model::Command
+  make_command(std::string name, std::vector<model::Argument> args = {}) {
+    model::Command c{};
+    c.name = std::move(name);
+    c.doc = {"A test command"};
+    if (!args.empty()) { c.args = std::move(args); }
+    return c;
   }
-  return c;
-}
 
-model::Root
-make_root_with_commands(std::string name,
-                        std::vector<model::Argument> args,
-                        std::vector<model::Command> commands) {
-  auto r = make_root(std::move(name), std::move(args));
-  r.commands = std::move(commands);
-  return r;
-}
+  model::Root
+  make_root_with_commands(
+    std::string name,
+    std::vector<model::Argument> args,
+    std::vector<model::Command> commands) {
+    auto r = make_root(std::move(name), std::move(args));
+    r.commands = std::move(commands);
+    return r;
+  }
 
 } // namespace
 
@@ -495,20 +553,27 @@ TEST_CASE("to_config_schema: root with empty path", "[config_schema]") {
   REQUIRE(schema["properties"].contains("verbose"));
 }
 
-TEST_CASE("to_config_schema: subcommand accumulates root args", "[config_schema]") {
-  auto build_cmd = make_command("build", {make_option({"target"}, model::ScalarType::String)});
-  auto root = make_root_with_commands("mytool", {make_flag({"verbose"})}, {build_cmd});
+TEST_CASE(
+  "to_config_schema: subcommand accumulates root args", "[config_schema]") {
+  auto build_cmd =
+    make_command("build", {make_option({"target"}, model::ScalarType::String)});
+  auto root =
+    make_root_with_commands("mytool", {make_flag({"verbose"})}, {build_cmd});
   auto schema = config_schema::to_config_schema(root, {"build"});
   REQUIRE(schema["title"] == "mytool-build configuration");
   REQUIRE(schema["properties"].contains("verbose"));
   REQUIRE(schema["properties"].contains("target"));
 }
 
-TEST_CASE("to_config_schema: nested subcommand accumulates all levels", "[config_schema]") {
+TEST_CASE(
+  "to_config_schema: nested subcommand accumulates all levels",
+  "[config_schema]") {
   auto push_cmd = make_command("push", {make_flag({"force"})});
-  auto stash_cmd = make_command("stash", {make_option({"message"}, model::ScalarType::String)});
+  auto stash_cmd = make_command(
+    "stash", {make_option({"message"}, model::ScalarType::String)});
   stash_cmd.commands = std::vector<model::Command>{push_cmd};
-  auto root = make_root_with_commands("git", {make_flag({"verbose"})}, {stash_cmd});
+  auto root =
+    make_root_with_commands("git", {make_flag({"verbose"})}, {stash_cmd});
   auto schema = config_schema::to_config_schema(root, {"stash", "push"});
   REQUIRE(schema["title"] == "git-stash-push configuration");
   REQUIRE(schema["properties"].contains("verbose"));
@@ -518,10 +583,12 @@ TEST_CASE("to_config_schema: nested subcommand accumulates all levels", "[config
 
 TEST_CASE("to_config_schema: nonexistent path throws", "[config_schema]") {
   auto root = make_root("mytool");
-  REQUIRE_THROWS_AS(config_schema::to_config_schema(root, {"nonexistent"}), std::runtime_error);
+  REQUIRE_THROWS_AS(
+    config_schema::to_config_schema(root, {"nonexistent"}), std::runtime_error);
 }
 
-TEST_CASE("to_config_schema: root with no args and no path", "[config_schema]") {
+TEST_CASE(
+  "to_config_schema: root with no args and no path", "[config_schema]") {
   model::Root r{};
   r.name = "bare";
   r.doc = {"bare tool"};
@@ -538,41 +605,46 @@ TEST_CASE("to_config_schema: root with no args and no path", "[config_schema]") 
 
 namespace {
 
-void
-validate_config(const json &schema, const json &config) {
-  nlohmann::json_schema::json_validator validator;
-  validator.set_root_schema(schema);
-  validator.validate(config);
-}
+  void
+  validate_config(const json& schema, const json& config) {
+    nlohmann::json_schema::json_validator validator;
+    validator.set_root_schema(schema);
+    validator.validate(config);
+  }
 
 } // namespace
 
-TEST_CASE("integration: valid config passes schema validation", "[config_schema][integration]") {
+TEST_CASE(
+  "integration: valid config passes schema validation",
+  "[config_schema][integration]") {
   auto root = make_root(
-      "mytool",
-      {make_flag({"verbose"}),
-       make_option_with_default({"output"}, model::ScalarType::String, "out.txt"),
-       make_positional_required("file", model::ScalarType::File)});
+    "mytool",
+    {make_flag({"verbose"}),
+     make_option_with_default({"output"}, model::ScalarType::String, "out.txt"),
+     make_positional_required("file", model::ScalarType::File)});
   auto schema = config_schema::to_config_schema(root);
 
-  json config = {{"verbose", true}, {"output", "result.txt"}, {"file", "input.txt"}};
+  json config = {
+    {"verbose", true}, {"output", "result.txt"}, {"file", "input.txt"}};
   REQUIRE_NOTHROW(validate_config(schema, config));
 }
 
-TEST_CASE("integration: config missing required field fails validation",
-          "[config_schema][integration]") {
+TEST_CASE(
+  "integration: config missing required field fails validation",
+  "[config_schema][integration]") {
   auto root = make_root(
-      "mytool",
-      {make_flag({"verbose"}),
-       make_positional_required("file", model::ScalarType::File)});
+    "mytool",
+    {make_flag({"verbose"}),
+     make_positional_required("file", model::ScalarType::File)});
   auto schema = config_schema::to_config_schema(root);
 
   json config = {{"verbose", true}};
   REQUIRE_THROWS(validate_config(schema, config));
 }
 
-TEST_CASE("integration: config with wrong type fails validation",
-          "[config_schema][integration]") {
+TEST_CASE(
+  "integration: config with wrong type fails validation",
+  "[config_schema][integration]") {
   auto root = make_root("mytool", {make_flag({"verbose"})});
   auto schema = config_schema::to_config_schema(root);
 
@@ -580,8 +652,9 @@ TEST_CASE("integration: config with wrong type fails validation",
   REQUIRE_THROWS(validate_config(schema, config));
 }
 
-TEST_CASE("integration: config with extra property fails validation",
-          "[config_schema][integration]") {
+TEST_CASE(
+  "integration: config with extra property fails validation",
+  "[config_schema][integration]") {
   auto root = make_root("mytool", {make_flag({"verbose"})});
   auto schema = config_schema::to_config_schema(root);
 
@@ -589,11 +662,13 @@ TEST_CASE("integration: config with extra property fails validation",
   REQUIRE_THROWS(validate_config(schema, config));
 }
 
-TEST_CASE("integration: enum option validates choices", "[config_schema][integration]") {
+TEST_CASE(
+  "integration: enum option validates choices",
+  "[config_schema][integration]") {
   auto root = make_root(
-      "mytool",
-      {make_option_with_choices(
-          {"level"}, model::ScalarType::Enum, {"debug", "info", "warn"})});
+    "mytool",
+    {make_option_with_choices(
+      {"level"}, model::ScalarType::Enum, {"debug", "info", "warn"})});
   auto schema = config_schema::to_config_schema(root);
 
   json valid = {{"level", "debug"}};
@@ -603,10 +678,11 @@ TEST_CASE("integration: enum option validates choices", "[config_schema][integra
   REQUIRE_THROWS(validate_config(schema, invalid));
 }
 
-TEST_CASE("integration: repeated option validates as array", "[config_schema][integration]") {
+TEST_CASE(
+  "integration: repeated option validates as array",
+  "[config_schema][integration]") {
   auto root = make_root(
-      "mytool",
-      {make_option_repeated({"include"}, model::ScalarType::String)});
+    "mytool", {make_option_repeated({"include"}, model::ScalarType::String)});
   auto schema = config_schema::to_config_schema(root);
 
   json valid = {{"include", json::array({"path1", "path2"})}};
@@ -616,10 +692,13 @@ TEST_CASE("integration: repeated option validates as array", "[config_schema][in
   REQUIRE_THROWS(validate_config(schema, invalid));
 }
 
-TEST_CASE("integration: subcommand schema validates accumulated args",
-          "[config_schema][integration]") {
-  auto build_cmd = make_command("build", {make_option_required({"target"}, model::ScalarType::String)});
-  auto root = make_root_with_commands("mytool", {make_flag({"verbose"})}, {build_cmd});
+TEST_CASE(
+  "integration: subcommand schema validates accumulated args",
+  "[config_schema][integration]") {
+  auto build_cmd = make_command(
+    "build", {make_option_required({"target"}, model::ScalarType::String)});
+  auto root =
+    make_root_with_commands("mytool", {make_flag({"verbose"})}, {build_cmd});
   auto schema = config_schema::to_config_schema(root, {"build"});
 
   json valid = {{"verbose", false}, {"target", "x86_64"}};
@@ -632,10 +711,11 @@ TEST_CASE("integration: subcommand schema validates accumulated args",
   REQUIRE_THROWS(validate_config(schema, missing_cmd_arg));
 }
 
-TEST_CASE("integration: integer option validates correctly", "[config_schema][integration]") {
+TEST_CASE(
+  "integration: integer option validates correctly",
+  "[config_schema][integration]") {
   auto root = make_root(
-      "mytool",
-      {make_option_with_default({"jobs"}, model::ScalarType::Int, 4)});
+    "mytool", {make_option_with_default({"jobs"}, model::ScalarType::Int, 4)});
   auto schema = config_schema::to_config_schema(root);
 
   json valid = {{"jobs", 8}};

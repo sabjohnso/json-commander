@@ -8,23 +8,18 @@ on:
 
 jobs:
   format:
-    name: clang-format
+    name: pre-commit
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install clang-format
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang-format-18
-          sudo ln -sf /usr/bin/clang-format-18 /usr/local/bin/clang-format
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
 
-      - name: Check formatting
-        run: |
-          ./scripts/check-format.sh
-          git diff --exit-code
+      - uses: pre-commit/action@v3.0.1
 
   build-linux:
     name: Linux ${{ matrix.compiler }} / ${{ matrix.config }}

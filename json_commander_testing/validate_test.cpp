@@ -20,22 +20,22 @@ TEST_CASE("Error carries its message", "[validate]") {
 TEST_CASE("Error is catchable as std::runtime_error", "[validate]") {
   try {
     throw Error("test");
-  } catch (const std::runtime_error &e) {
+  } catch (const std::runtime_error& e) {
     REQUIRE(std::string(e.what()) == "test");
   }
 }
 
 TEST_CASE("Validator with no-op check does not throw", "[validate]") {
-  Validator v{[](const std::string &, const std::optional<json> &) {}, "no-op"};
+  Validator v{[](const std::string&, const std::optional<json>&) {}, "no-op"};
   REQUIRE_NOTHROW(v.check("--arg", json("hello")));
 }
 
 TEST_CASE("Validator with throwing check throws Error", "[validate]") {
   Validator v{
-      [](const std::string &name, const std::optional<json> &) {
-        throw Error(name + " failed");
-      },
-      "always-fail",
+    [](const std::string& name, const std::optional<json>&) {
+      throw Error(name + " failed");
+    },
+    "always-fail",
   };
   REQUIRE_THROWS_AS(v.check("--arg", json("hello")), Error);
 }
@@ -68,7 +68,7 @@ TEST_CASE("required error message includes argument name", "[validate]") {
   try {
     required().check("--input", std::nullopt);
     FAIL("expected Error to be thrown");
-  } catch (const Error &e) {
+  } catch (const Error& e) {
     std::string msg = e.what();
     CHECK(msg.find("--input") != std::string::npos);
     CHECK(msg.find("required") != std::string::npos);
@@ -85,19 +85,20 @@ TEST_CASE("required has description 'required'", "[validate]") {
 
 namespace {
 
-struct TempFile {
-  std::string path;
+  struct TempFile {
+    std::string path;
 
-  TempFile() : path("/tmp/commander_validate_test_file") {
-    std::ofstream ofs(path);
-    ofs << "test";
-  }
+    TempFile()
+        : path("/tmp/commander_validate_test_file") {
+      std::ofstream ofs(path);
+      ofs << "test";
+    }
 
-  ~TempFile() { std::remove(path.c_str()); }
-};
+    ~TempFile() { std::remove(path.c_str()); }
+  };
 
-const std::string absent_path = "/tmp/commander_nonexistent_xyz_abc_123";
-const std::string known_dir = "/tmp";
+  const std::string absent_path = "/tmp/commander_nonexistent_xyz_abc_123";
+  const std::string known_dir = "/tmp";
 
 } // namespace
 
@@ -109,7 +110,8 @@ TEST_CASE("must_exist_file passes for existing regular file", "[validate]") {
 }
 
 TEST_CASE("must_exist_file throws for non-existent path", "[validate]") {
-  REQUIRE_THROWS_AS(must_exist_file().check("--input", json(absent_path)), Error);
+  REQUIRE_THROWS_AS(
+    must_exist_file().check("--input", json(absent_path)), Error);
 }
 
 TEST_CASE("must_exist_file throws for directory", "[validate]") {
@@ -120,11 +122,12 @@ TEST_CASE("must_exist_file passes for absent value (nullopt)", "[validate]") {
   REQUIRE_NOTHROW(must_exist_file().check("--input", std::nullopt));
 }
 
-TEST_CASE("must_exist_file error includes argument name and path", "[validate]") {
+TEST_CASE(
+  "must_exist_file error includes argument name and path", "[validate]") {
   try {
     must_exist_file().check("--input", json(absent_path));
     FAIL("expected Error to be thrown");
-  } catch (const Error &e) {
+  } catch (const Error& e) {
     std::string msg = e.what();
     CHECK(msg.find("--input") != std::string::npos);
     CHECK(msg.find(absent_path) != std::string::npos);
@@ -147,7 +150,8 @@ TEST_CASE("must_exist_dir throws for regular file", "[validate]") {
 }
 
 TEST_CASE("must_exist_dir throws for non-existent path", "[validate]") {
-  REQUIRE_THROWS_AS(must_exist_dir().check("--output", json(absent_path)), Error);
+  REQUIRE_THROWS_AS(
+    must_exist_dir().check("--output", json(absent_path)), Error);
 }
 
 TEST_CASE("must_exist_dir passes for absent value (nullopt)", "[validate]") {
@@ -170,7 +174,8 @@ TEST_CASE("must_exist_path passes for existing directory", "[validate]") {
 }
 
 TEST_CASE("must_exist_path throws for non-existent path", "[validate]") {
-  REQUIRE_THROWS_AS(must_exist_path().check("--path", json(absent_path)), Error);
+  REQUIRE_THROWS_AS(
+    must_exist_path().check("--path", json(absent_path)), Error);
 }
 
 TEST_CASE("must_exist_path passes for absent value (nullopt)", "[validate]") {
@@ -205,22 +210,26 @@ TEST_CASE("all_of with single required passes for value", "[validate]") {
   REQUIRE_NOTHROW(v.check("--arg", json("hello")));
 }
 
-TEST_CASE("all_of with single required has description 'required'", "[validate]") {
+TEST_CASE(
+  "all_of with single required has description 'required'", "[validate]") {
   REQUIRE(all_of({required()}).description == "required");
 }
 
-TEST_CASE("all_of short-circuits: required before must_exist_file", "[validate]") {
+TEST_CASE(
+  "all_of short-circuits: required before must_exist_file", "[validate]") {
   auto v = all_of({required(), must_exist_file()});
   try {
     v.check("--input", std::nullopt);
     FAIL("expected Error to be thrown");
-  } catch (const Error &e) {
+  } catch (const Error& e) {
     std::string msg = e.what();
     CHECK(msg.find("required") != std::string::npos);
   }
 }
 
-TEST_CASE("all_of: required + must_exist_file throws for non-existent file", "[validate]") {
+TEST_CASE(
+  "all_of: required + must_exist_file throws for non-existent file",
+  "[validate]") {
   auto v = all_of({required(), must_exist_file()});
   REQUIRE_THROWS_AS(v.check("--input", json(absent_path)), Error);
 }
@@ -263,7 +272,8 @@ make_positional(std::string name, TypeSpec type) {
 
 // --- from_option ---
 
-TEST_CASE("from_option: no constraints produces no-op validator", "[validate]") {
+TEST_CASE(
+  "from_option: no constraints produces no-op validator", "[validate]") {
   auto opt = make_option({"output"}, ScalarType::String);
   auto v = from_option(opt);
   REQUIRE_NOTHROW(v.check("--output", std::nullopt));
@@ -285,7 +295,8 @@ TEST_CASE("from_option: required=false does not check required", "[validate]") {
   REQUIRE_NOTHROW(v.check("--input", std::nullopt));
 }
 
-TEST_CASE("from_option: type=File + must_exist checks file existence", "[validate]") {
+TEST_CASE(
+  "from_option: type=File + must_exist checks file existence", "[validate]") {
   TempFile tf;
   auto opt = make_option({"input"}, ScalarType::File);
   opt.must_exist = true;
@@ -294,7 +305,9 @@ TEST_CASE("from_option: type=File + must_exist checks file existence", "[validat
   REQUIRE_THROWS_AS(v.check("--input", json(absent_path)), Error);
 }
 
-TEST_CASE("from_option: type=Dir + must_exist checks directory existence", "[validate]") {
+TEST_CASE(
+  "from_option: type=Dir + must_exist checks directory existence",
+  "[validate]") {
   auto opt = make_option({"output"}, ScalarType::Dir);
   opt.must_exist = true;
   auto v = from_option(opt);
@@ -302,7 +315,8 @@ TEST_CASE("from_option: type=Dir + must_exist checks directory existence", "[val
   REQUIRE_THROWS_AS(v.check("--output", json(absent_path)), Error);
 }
 
-TEST_CASE("from_option: type=Path + must_exist checks path existence", "[validate]") {
+TEST_CASE(
+  "from_option: type=Path + must_exist checks path existence", "[validate]") {
   TempFile tf;
   auto opt = make_option({"target"}, ScalarType::Path);
   opt.must_exist = true;
@@ -330,7 +344,8 @@ TEST_CASE("from_option: required + must_exist composes both", "[validate]") {
   REQUIRE_NOTHROW(v.check("--input", json(tf.path)));
 }
 
-TEST_CASE("from_option: description reflects composed validators", "[validate]") {
+TEST_CASE(
+  "from_option: description reflects composed validators", "[validate]") {
   auto opt = make_option({"input"}, ScalarType::File);
   opt.required = true;
   opt.must_exist = true;
@@ -341,7 +356,8 @@ TEST_CASE("from_option: description reflects composed validators", "[validate]")
 
 // --- from_positional ---
 
-TEST_CASE("from_positional: no constraints produces no-op validator", "[validate]") {
+TEST_CASE(
+  "from_positional: no constraints produces no-op validator", "[validate]") {
   auto pos = make_positional("filename", ScalarType::String);
   auto v = from_positional(pos);
   REQUIRE_NOTHROW(v.check("filename", std::nullopt));
@@ -365,7 +381,8 @@ TEST_CASE("from_positional: type=File + must_exist checks file", "[validate]") {
   REQUIRE_THROWS_AS(v.check("filename", json(absent_path)), Error);
 }
 
-TEST_CASE("from_positional: required + must_exist composes both", "[validate]") {
+TEST_CASE(
+  "from_positional: required + must_exist composes both", "[validate]") {
   auto pos = make_positional("filename", ScalarType::File);
   pos.required = true;
   pos.must_exist = true;
@@ -387,10 +404,12 @@ TEST_CASE("list(file) + must_exist: fails on first bad path", "[validate]") {
   auto opt = make_option({"files"}, ListType{ScalarType::File, std::nullopt});
   opt.must_exist = true;
   auto v = from_option(opt);
-  REQUIRE_THROWS_AS(v.check("--files", json::array({tf.path, absent_path})), Error);
+  REQUIRE_THROWS_AS(
+    v.check("--files", json::array({tf.path, absent_path})), Error);
 }
 
-TEST_CASE("list(file) + must_exist: passes when all elements exist", "[validate]") {
+TEST_CASE(
+  "list(file) + must_exist: passes when all elements exist", "[validate]") {
   TempFile tf;
   auto opt = make_option({"files"}, ListType{ScalarType::File, std::nullopt});
   opt.must_exist = true;
@@ -422,9 +441,11 @@ TEST_CASE("list(dir) + must_exist: checks directories", "[validate]") {
 
 // --- pair ---
 
-TEST_CASE("pair(string, file) + must_exist: checks only index 1", "[validate]") {
+TEST_CASE(
+  "pair(string, file) + must_exist: checks only index 1", "[validate]") {
   TempFile tf;
-  auto opt = make_option({"kv"}, PairType{ScalarType::String, ScalarType::File, std::nullopt});
+  auto opt = make_option(
+    {"kv"}, PairType{ScalarType::String, ScalarType::File, std::nullopt});
   opt.must_exist = true;
   auto v = from_option(opt);
   REQUIRE_NOTHROW(v.check("--kv", json::array({"key", tf.path})));
@@ -433,7 +454,8 @@ TEST_CASE("pair(string, file) + must_exist: checks only index 1", "[validate]") 
 
 TEST_CASE("pair(file, int) + must_exist: checks only index 0", "[validate]") {
   TempFile tf;
-  auto opt = make_option({"fi"}, PairType{ScalarType::File, ScalarType::Int, std::nullopt});
+  auto opt = make_option(
+    {"fi"}, PairType{ScalarType::File, ScalarType::Int, std::nullopt});
   opt.must_exist = true;
   auto v = from_option(opt);
   REQUIRE_NOTHROW(v.check("--fi", json::array({tf.path, 42})));
@@ -442,16 +464,20 @@ TEST_CASE("pair(file, int) + must_exist: checks only index 0", "[validate]") {
 
 TEST_CASE("pair(file, file) + must_exist: checks both", "[validate]") {
   TempFile tf;
-  auto opt = make_option({"ff"}, PairType{ScalarType::File, ScalarType::File, std::nullopt});
+  auto opt = make_option(
+    {"ff"}, PairType{ScalarType::File, ScalarType::File, std::nullopt});
   opt.must_exist = true;
   auto v = from_option(opt);
   REQUIRE_NOTHROW(v.check("--ff", json::array({tf.path, tf.path})));
-  REQUIRE_THROWS_AS(v.check("--ff", json::array({tf.path, absent_path})), Error);
-  REQUIRE_THROWS_AS(v.check("--ff", json::array({absent_path, tf.path})), Error);
+  REQUIRE_THROWS_AS(
+    v.check("--ff", json::array({tf.path, absent_path})), Error);
+  REQUIRE_THROWS_AS(
+    v.check("--ff", json::array({absent_path, tf.path})), Error);
 }
 
 TEST_CASE("pair(string, int) + must_exist: no-op", "[validate]") {
-  auto opt = make_option({"si"}, PairType{ScalarType::String, ScalarType::Int, std::nullopt});
+  auto opt = make_option(
+    {"si"}, PairType{ScalarType::String, ScalarType::Int, std::nullopt});
   opt.must_exist = true;
   auto v = from_option(opt);
   REQUIRE_NOTHROW(v.check("--si", json::array({"hello", 42})));
@@ -459,20 +485,27 @@ TEST_CASE("pair(string, int) + must_exist: no-op", "[validate]") {
 
 // --- triple ---
 
-TEST_CASE("triple(file, int, dir) + must_exist: checks indices 0 and 2", "[validate]") {
+TEST_CASE(
+  "triple(file, int, dir) + must_exist: checks indices 0 and 2", "[validate]") {
   TempFile tf;
-  auto opt =
-      make_option({"fid"}, TripleType{ScalarType::File, ScalarType::Int, ScalarType::Dir, std::nullopt});
+  auto opt = make_option(
+    {"fid"},
+    TripleType{
+      ScalarType::File, ScalarType::Int, ScalarType::Dir, std::nullopt});
   opt.must_exist = true;
   auto v = from_option(opt);
   REQUIRE_NOTHROW(v.check("--fid", json::array({tf.path, 42, known_dir})));
-  REQUIRE_THROWS_AS(v.check("--fid", json::array({absent_path, 42, known_dir})), Error);
-  REQUIRE_THROWS_AS(v.check("--fid", json::array({tf.path, 42, absent_path})), Error);
+  REQUIRE_THROWS_AS(
+    v.check("--fid", json::array({absent_path, 42, known_dir})), Error);
+  REQUIRE_THROWS_AS(
+    v.check("--fid", json::array({tf.path, 42, absent_path})), Error);
 }
 
 TEST_CASE("triple(string, int, float) + must_exist: no-op", "[validate]") {
-  auto opt =
-      make_option({"sif"}, TripleType{ScalarType::String, ScalarType::Int, ScalarType::Float, std::nullopt});
+  auto opt = make_option(
+    {"sif"},
+    TripleType{
+      ScalarType::String, ScalarType::Int, ScalarType::Float, std::nullopt});
   opt.must_exist = true;
   auto v = from_option(opt);
   REQUIRE_NOTHROW(v.check("--sif", json::array({"hello", 42, 3.14})));
@@ -482,7 +515,8 @@ TEST_CASE("triple(string, int, float) + must_exist: no-op", "[validate]") {
 // Phase 7: Integration tests
 // ---------------------------------------------------------------------------
 
-TEST_CASE("integration: --output file with no constraints is no-op", "[validate]") {
+TEST_CASE(
+  "integration: --output file with no constraints is no-op", "[validate]") {
   auto opt = make_option({"output", "o"}, ScalarType::File);
   auto v = from_option(opt);
   REQUIRE_NOTHROW(v.check("--output", json("/any/path")));
@@ -506,28 +540,37 @@ TEST_CASE("integration: required file with must_exist", "[validate]") {
   REQUIRE_NOTHROW(v.check("--input", json(tf.path)));
 }
 
-TEST_CASE("integration: list of files with must_exist validates each element", "[validate]") {
+TEST_CASE(
+  "integration: list of files with must_exist validates each element",
+  "[validate]") {
   TempFile tf;
   auto opt = make_option({"files"}, ListType{ScalarType::File, std::nullopt});
   opt.must_exist = true;
   auto v = from_option(opt);
 
   REQUIRE_NOTHROW(v.check("--files", json::array({tf.path})));
-  REQUIRE_THROWS_AS(v.check("--files", json::array({tf.path, absent_path})), Error);
+  REQUIRE_THROWS_AS(
+    v.check("--files", json::array({tf.path, absent_path})), Error);
 }
 
-TEST_CASE("integration: pair(string, file) with must_exist checks only file", "[validate]") {
+TEST_CASE(
+  "integration: pair(string, file) with must_exist checks only file",
+  "[validate]") {
   TempFile tf;
-  auto opt = make_option({"kv"}, PairType{ScalarType::String, ScalarType::File, std::nullopt});
+  auto opt = make_option(
+    {"kv"}, PairType{ScalarType::String, ScalarType::File, std::nullopt});
   opt.must_exist = true;
   auto v = from_option(opt);
 
   // string element "nonexistent" is fine, file element is checked
   REQUIRE_NOTHROW(v.check("--kv", json::array({"nonexistent", tf.path})));
-  REQUIRE_THROWS_AS(v.check("--kv", json::array({"nonexistent", absent_path})), Error);
+  REQUIRE_THROWS_AS(
+    v.check("--kv", json::array({"nonexistent", absent_path})), Error);
 }
 
-TEST_CASE("integration: idempotence — running validator twice produces same result", "[validate]") {
+TEST_CASE(
+  "integration: idempotence — running validator twice produces same result",
+  "[validate]") {
   TempFile tf;
   auto opt = make_option({"input"}, ScalarType::File);
   opt.required = true;

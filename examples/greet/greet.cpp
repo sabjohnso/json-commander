@@ -42,15 +42,19 @@ make_cli() {
 // ---------------------------------------------------------------------------
 
 int
-main(int argc, char *argv[]) {
-  return json_commander::run(make_cli(), argc, argv, [](const nlohmann::json &config) {
-    std::string greeting = "Hello, " + config["name"].get<std::string>() + "!";
-    if (config["loud"].get<bool>()) {
-      std::transform(greeting.begin(), greeting.end(), greeting.begin(), [](unsigned char c) {
-        return static_cast<char>(std::toupper(c));
-      });
-    }
-    std::cout << greeting << "\n";
-    return 0;
-  });
+main(int argc, char* argv[]) {
+  return json_commander::run(
+    make_cli(), argc, argv, [](const nlohmann::json& config) {
+      std::string greeting =
+        "Hello, " + config["name"].get<std::string>() + "!";
+      if (config["loud"].get<bool>()) {
+        std::transform(
+          greeting.begin(),
+          greeting.end(),
+          greeting.begin(),
+          [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
+      }
+      std::cout << greeting << "\n";
+      return 0;
+    });
 }

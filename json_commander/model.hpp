@@ -21,7 +21,7 @@ namespace json_commander::model {
     ScalarType element;
     std::optional<std::string> separator;
     bool
-    operator==(const ListType &) const = default;
+    operator==(const ListType&) const = default;
   };
 
   struct PairType {
@@ -29,7 +29,7 @@ namespace json_commander::model {
     ScalarType second;
     std::optional<std::string> separator;
     bool
-    operator==(const PairType &) const = default;
+    operator==(const PairType&) const = default;
   };
 
   struct TripleType {
@@ -38,7 +38,7 @@ namespace json_commander::model {
     ScalarType third;
     std::optional<std::string> separator;
     bool
-    operator==(const TripleType &) const = default;
+    operator==(const TripleType&) const = default;
   };
 
   using TypeSpec = std::variant<ScalarType, ListType, PairType, TripleType>;
@@ -51,7 +51,7 @@ namespace json_commander::model {
     std::string var;
     std::optional<DocString> doc;
     bool
-    operator==(const EnvBindingObj &) const = default;
+    operator==(const EnvBindingObj&) const = default;
   };
 
   using EnvBinding = std::variant<std::string, EnvBindingObj>;
@@ -60,7 +60,7 @@ namespace json_commander::model {
     std::string var;
     std::optional<DocString> doc;
     bool
-    operator==(const EnvInfo &) const = default;
+    operator==(const EnvInfo&) const = default;
   };
 
   struct ExitInfo {
@@ -68,7 +68,7 @@ namespace json_commander::model {
     std::optional<int> max;
     DocString doc;
     bool
-    operator==(const ExitInfo &) const = default;
+    operator==(const ExitInfo&) const = default;
   };
 
   // ---------------------------------------------------------------------------
@@ -90,7 +90,7 @@ namespace json_commander::model {
     std::optional<std::string> deprecated;
     std::optional<std::string> docs;
     bool
-    operator==(const Flag &) const = default;
+    operator==(const Flag&) const = default;
   };
 
   struct FlagGroupEntry {
@@ -98,7 +98,7 @@ namespace json_commander::model {
     DocString doc;
     nlohmann::json value;
     bool
-    operator==(const FlagGroupEntry &) const = default;
+    operator==(const FlagGroupEntry&) const = default;
   };
 
   struct FlagGroup {
@@ -109,7 +109,7 @@ namespace json_commander::model {
     std::optional<bool> repeated;
     std::optional<std::string> docs;
     bool
-    operator==(const FlagGroup &) const = default;
+    operator==(const FlagGroup&) const = default;
   };
 
   struct Option {
@@ -126,7 +126,7 @@ namespace json_commander::model {
     std::optional<EnvBinding> env;
     std::optional<std::string> docs;
     bool
-    operator==(const Option &) const = default;
+    operator==(const Option&) const = default;
   };
 
   struct Positional {
@@ -140,7 +140,7 @@ namespace json_commander::model {
     std::optional<bool> must_exist;
     std::optional<std::string> docs;
     bool
-    operator==(const Positional &) const = default;
+    operator==(const Positional&) const = default;
   };
 
   using Argument = std::variant<Flag, FlagGroup, Option, Positional>;
@@ -152,41 +152,42 @@ namespace json_commander::model {
   struct ParagraphBlock {
     DocString paragraph;
     bool
-    operator==(const ParagraphBlock &) const = default;
+    operator==(const ParagraphBlock&) const = default;
   };
 
   struct PreBlock {
     DocString pre;
     bool
-    operator==(const PreBlock &) const = default;
+    operator==(const PreBlock&) const = default;
   };
 
   struct LabelTextBlock {
     std::string label;
     DocString text;
     bool
-    operator==(const LabelTextBlock &) const = default;
+    operator==(const LabelTextBlock&) const = default;
   };
 
   struct NoBlankBlock {
     bool
-    operator==(const NoBlankBlock &) const = default;
+    operator==(const NoBlankBlock&) const = default;
   };
 
-  using ManBlock = std::variant<ParagraphBlock, PreBlock, LabelTextBlock, NoBlankBlock>;
+  using ManBlock =
+    std::variant<ParagraphBlock, PreBlock, LabelTextBlock, NoBlankBlock>;
 
   struct ManSection {
     std::string name;
     std::vector<ManBlock> blocks;
     bool
-    operator==(const ManSection &) const = default;
+    operator==(const ManSection&) const = default;
   };
 
   struct ManXref {
     std::string name;
     int section;
     bool
-    operator==(const ManXref &) const = default;
+    operator==(const ManXref&) const = default;
   };
 
   struct Man {
@@ -194,7 +195,7 @@ namespace json_commander::model {
     std::optional<std::vector<ManSection>> sections;
     std::optional<std::vector<ManXref>> xrefs;
     bool
-    operator==(const Man &) const = default;
+    operator==(const Man&) const = default;
   };
 
   // ---------------------------------------------------------------------------
@@ -206,14 +207,14 @@ namespace json_commander::model {
     std::optional<std::string> user;
     std::optional<std::string> local;
     bool
-    operator==(const ConfigPaths &) const = default;
+    operator==(const ConfigPaths&) const = default;
   };
 
   struct Config {
     std::string format;
     std::optional<ConfigPaths> paths;
     bool
-    operator==(const Config &) const = default;
+    operator==(const Config&) const = default;
   };
 
   // ---------------------------------------------------------------------------
@@ -229,7 +230,7 @@ namespace json_commander::model {
     std::optional<std::vector<EnvInfo>> envs;
     std::optional<std::vector<ExitInfo>> exits;
     bool
-    operator==(const Command &) const = default;
+    operator==(const Command&) const = default;
   };
 
   struct Root {
@@ -243,7 +244,7 @@ namespace json_commander::model {
     std::optional<std::string> version;
     std::optional<Config> config;
     bool
-    operator==(const Root &) const = default;
+    operator==(const Root&) const = default;
   };
 
 } // namespace json_commander::model

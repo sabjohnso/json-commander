@@ -149,12 +149,13 @@ TEST_CASE("enum_conv rejects invalid choice", "[conv]") {
   REQUIRE_THROWS_AS(c.parse("xml"), Error);
 }
 
-TEST_CASE("enum_conv error mentions invalid value and valid choices", "[conv]") {
+TEST_CASE(
+  "enum_conv error mentions invalid value and valid choices", "[conv]") {
   auto c = enum_conv({"json", "yaml", "toml"});
   try {
     c.parse("xml");
     FAIL("expected Error to be thrown");
-  } catch (const Error &e) {
+  } catch (const Error& e) {
     std::string msg = e.what();
     CHECK(msg.find("xml") != std::string::npos);
     CHECK(msg.find("json") != std::string::npos);
@@ -287,7 +288,8 @@ TEST_CASE("make(ScalarType::Int) parses integer", "[conv]") {
   REQUIRE(make(json_commander::model::ScalarType::Int).parse("42") == json(42));
 }
 
-TEST_CASE("make(ScalarType::Enum) without choices parses any string", "[conv]") {
+TEST_CASE(
+  "make(ScalarType::Enum) without choices parses any string", "[conv]") {
   auto c = make(json_commander::model::ScalarType::Enum);
   REQUIRE_NOTHROW(c.parse("anything"));
   REQUIRE(c.parse("anything") == json("anything"));
@@ -309,12 +311,14 @@ TEST_CASE("make(TypeSpec) with PairType parses pair", "[conv]") {
 
 TEST_CASE("make(TypeSpec) with TripleType parses triple", "[conv]") {
   using namespace json_commander::model;
-  TypeSpec spec = TripleType{ScalarType::Int, ScalarType::Int, ScalarType::Int, ","};
+  TypeSpec spec =
+    TripleType{ScalarType::Int, ScalarType::Int, ScalarType::Int, ","};
   auto c = make(spec);
   REQUIRE(c.parse("1,2,3") == json({1, 2, 3}));
 }
 
-TEST_CASE("make(TypeSpec) with enum and choices validates against choices", "[conv]") {
+TEST_CASE(
+  "make(TypeSpec) with enum and choices validates against choices", "[conv]") {
   using namespace json_commander::model;
   TypeSpec spec = ScalarType::Enum;
   auto c = make(spec, std::vector<std::string>{"json", "yaml"});
@@ -322,7 +326,8 @@ TEST_CASE("make(TypeSpec) with enum and choices validates against choices", "[co
   REQUIRE_THROWS_AS(c.parse("xml"), Error);
 }
 
-TEST_CASE("make(TypeSpec) with list uses default separator when omitted", "[conv]") {
+TEST_CASE(
+  "make(TypeSpec) with list uses default separator when omitted", "[conv]") {
   using namespace json_commander::model;
   TypeSpec spec = ListType{ScalarType::Int, std::nullopt};
   auto c = make(spec);

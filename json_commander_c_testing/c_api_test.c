@@ -10,44 +10,54 @@
 static int tests_run = 0;
 static int tests_passed = 0;
 
-#define TEST(name)                                                                                 \
-  static void name(void);                                                                          \
-  static void run_##name(void) {                                                                   \
-    ++tests_run;                                                                                   \
-    printf("  %s ... ", #name);                                                                    \
-    name();                                                                                        \
-    ++tests_passed;                                                                                \
-    printf("ok\n");                                                                                \
-  }                                                                                                \
+#define TEST(name)                                                             \
+  static void name(void);                                                      \
+  static void run_##name(void) {                                               \
+    ++tests_run;                                                               \
+    printf("  %s ... ", #name);                                                \
+    name();                                                                    \
+    ++tests_passed;                                                            \
+    printf("ok\n");                                                            \
+  }                                                                            \
   static void name(void)
 
-#define ASSERT(expr)                                                                               \
-  do {                                                                                             \
-    if (!(expr)) {                                                                                 \
-      printf("FAIL\n    assertion failed: %s\n    at %s:%d\n", #expr, __FILE__, __LINE__);         \
-      exit(1);                                                                                     \
-    }                                                                                              \
+#define ASSERT(expr)                                                           \
+  do {                                                                         \
+    if (!(expr)) {                                                             \
+      printf(                                                                  \
+        "FAIL\n    assertion failed: %s\n    at %s:%d\n",                      \
+        #expr,                                                                 \
+        __FILE__,                                                              \
+        __LINE__);                                                             \
+      exit(1);                                                                 \
+    }                                                                          \
   } while (0)
 
-#define ASSERT_EQ_INT(a, b)                                                                        \
-  do {                                                                                             \
-    int _a = (a), _b = (b);                                                                        \
-    if (_a != _b) {                                                                                \
-      printf("FAIL\n    expected %d == %d\n    at %s:%d\n", _a, _b, __FILE__, __LINE__);           \
-      exit(1);                                                                                     \
-    }                                                                                              \
+#define ASSERT_EQ_INT(a, b)                                                    \
+  do {                                                                         \
+    int _a = (a), _b = (b);                                                    \
+    if (_a != _b) {                                                            \
+      printf(                                                                  \
+        "FAIL\n    expected %d == %d\n    at %s:%d\n",                         \
+        _a,                                                                    \
+        _b,                                                                    \
+        __FILE__,                                                              \
+        __LINE__);                                                             \
+      exit(1);                                                                 \
+    }                                                                          \
   } while (0)
 
-#define ASSERT_STR_CONTAINS(haystack, needle)                                                      \
-  do {                                                                                             \
-    if (strstr((haystack), (needle)) == NULL) {                                                    \
-      printf("FAIL\n    \"%s\" not found in \"%s\"\n    at %s:%d\n",                               \
-             (needle),                                                                             \
-             (haystack),                                                                           \
-             __FILE__,                                                                             \
-             __LINE__);                                                                            \
-      exit(1);                                                                                     \
-    }                                                                                              \
+#define ASSERT_STR_CONTAINS(haystack, needle)                                  \
+  do {                                                                         \
+    if (strstr((haystack), (needle)) == NULL) {                                \
+      printf(                                                                  \
+        "FAIL\n    \"%s\" not found in \"%s\"\n    at %s:%d\n",                \
+        (needle),                                                              \
+        (haystack),                                                            \
+        __FILE__,                                                              \
+        __LINE__);                                                             \
+      exit(1);                                                                 \
+    }                                                                          \
   } while (0)
 
 #define RUN(name) run_##name()
@@ -56,10 +66,10 @@ static int tests_passed = 0;
  * Test schema and callback state
  * -------------------------------------------------------------------------- */
 
-static const char *SCHEMA_WITH_OPTION =
-    "{\"name\":\"app\",\"doc\":[\"A test app\"],\"version\":\"1.0.0\","
-    "\"args\":[{\"kind\":\"option\",\"names\":[\"output\",\"o\"],"
-    "\"doc\":[\"Output file\"],\"type\":\"string\",\"default\":\"out.txt\"}]}";
+static const char* SCHEMA_WITH_OPTION =
+  "{\"name\":\"app\",\"doc\":[\"A test app\"],\"version\":\"1.0.0\","
+  "\"args\":[{\"kind\":\"option\",\"names\":[\"output\",\"o\"],"
+  "\"doc\":[\"Output file\"],\"type\":\"string\",\"default\":\"out.txt\"}]}";
 
 static char last_config[4096];
 static int callback_called;
@@ -71,7 +81,7 @@ reset_state(void) {
 }
 
 static int
-capture_callback(const char *config_json) {
+capture_callback(const char* config_json) {
   callback_called = 1;
   strncpy(last_config, config_json, sizeof(last_config) - 1);
   last_config[sizeof(last_config) - 1] = '\0';
@@ -79,7 +89,7 @@ capture_callback(const char *config_json) {
 }
 
 static int
-return42_callback(const char *config_json) {
+return42_callback(const char* config_json) {
   (void)config_json;
   callback_called = 1;
   return 42;
@@ -91,7 +101,7 @@ return42_callback(const char *config_json) {
 
 TEST(test_parse_ok) {
   reset_state();
-  char *argv[] = {"app", "--output", "foo.txt"};
+  char* argv[] = {"app", "--output", "foo.txt"};
   int rc = jcmd_run(SCHEMA_WITH_OPTION, 3, argv, capture_callback);
   ASSERT_EQ_INT(rc, 0);
   ASSERT_EQ_INT(callback_called, 1);
@@ -100,7 +110,7 @@ TEST(test_parse_ok) {
 
 TEST(test_parse_defaults) {
   reset_state();
-  char *argv[] = {"app"};
+  char* argv[] = {"app"};
   int rc = jcmd_run(SCHEMA_WITH_OPTION, 1, argv, capture_callback);
   ASSERT_EQ_INT(rc, 0);
   ASSERT_EQ_INT(callback_called, 1);
@@ -109,7 +119,7 @@ TEST(test_parse_defaults) {
 
 TEST(test_callback_return_value) {
   reset_state();
-  char *argv[] = {"app"};
+  char* argv[] = {"app"};
   int rc = jcmd_run(SCHEMA_WITH_OPTION, 1, argv, return42_callback);
   ASSERT_EQ_INT(rc, 42);
   ASSERT_EQ_INT(callback_called, 1);
@@ -117,7 +127,7 @@ TEST(test_callback_return_value) {
 
 TEST(test_help) {
   reset_state();
-  char *argv[] = {"app", "--help"};
+  char* argv[] = {"app", "--help"};
   int rc = jcmd_run(SCHEMA_WITH_OPTION, 2, argv, capture_callback);
   ASSERT_EQ_INT(rc, 0);
   ASSERT_EQ_INT(callback_called, 0);
@@ -125,7 +135,7 @@ TEST(test_help) {
 
 TEST(test_version) {
   reset_state();
-  char *argv[] = {"app", "--version"};
+  char* argv[] = {"app", "--version"};
   int rc = jcmd_run(SCHEMA_WITH_OPTION, 2, argv, capture_callback);
   ASSERT_EQ_INT(rc, 0);
   ASSERT_EQ_INT(callback_called, 0);
@@ -133,7 +143,7 @@ TEST(test_version) {
 
 TEST(test_manpage) {
   reset_state();
-  char *argv[] = {"app", "--help-man"};
+  char* argv[] = {"app", "--help-man"};
   int rc = jcmd_run(SCHEMA_WITH_OPTION, 2, argv, capture_callback);
   ASSERT_EQ_INT(rc, 0);
   ASSERT_EQ_INT(callback_called, 0);
@@ -141,7 +151,7 @@ TEST(test_manpage) {
 
 TEST(test_parse_error) {
   reset_state();
-  char *argv[] = {"app", "--unknown"};
+  char* argv[] = {"app", "--unknown"};
   int rc = jcmd_run(SCHEMA_WITH_OPTION, 2, argv, capture_callback);
   ASSERT_EQ_INT(rc, 1);
   ASSERT_EQ_INT(callback_called, 0);
@@ -149,7 +159,7 @@ TEST(test_parse_error) {
 
 TEST(test_invalid_schema) {
   reset_state();
-  char *argv[] = {"app"};
+  char* argv[] = {"app"};
   int rc = jcmd_run("{}", 1, argv, capture_callback);
   ASSERT_EQ_INT(rc, 1);
   ASSERT_EQ_INT(callback_called, 0);
@@ -157,7 +167,7 @@ TEST(test_invalid_schema) {
 
 TEST(test_bad_json_schema) {
   reset_state();
-  char *argv[] = {"app"};
+  char* argv[] = {"app"};
   int rc = jcmd_run("not json", 1, argv, capture_callback);
   ASSERT_EQ_INT(rc, 1);
   ASSERT_EQ_INT(callback_called, 0);

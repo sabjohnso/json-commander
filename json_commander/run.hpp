@@ -25,15 +25,16 @@
 
 namespace json_commander {
 
-  using MainFn = std::function<int(const nlohmann::json &config)>;
+  using MainFn = std::function<int(const nlohmann::json& config)>;
 
   // -------------------------------------------------------------------------
   // Core overload: model::Root → run
   // -------------------------------------------------------------------------
 
   inline int
-  run(const model::Root &root, int argc, char *argv[], MainFn main_fn) {
-    std::string name = (argc > 0 && argv && argv[0] && argv[0][0] != '\0') ? argv[0] : "error";
+  run(const model::Root& root, int argc, char* argv[], MainFn main_fn) {
+    std::string name =
+      (argc > 0 && argv && argv[0] && argv[0][0] != '\0') ? argv[0] : "error";
 
     auto spec = cmd::make(root);
 
@@ -45,7 +46,7 @@ namespace json_commander {
     parse::ParseResult result;
     try {
       result = parse::parse(spec, args);
-    } catch (const parse::Error &e) {
+    } catch (const parse::Error& e) {
       std::cerr << name << ": " << e.what() << "\n";
       if (JCMD_ISATTY(JCMD_STDERR_FD)) {
         std::cerr << manpage::to_ansi_text(root, {});
@@ -56,31 +57,29 @@ namespace json_commander {
     }
 
     return std::visit(
-        [&](const auto &r) -> int {
-          using T = std::decay_t<decltype(r)>;
+      [&](const auto& r) -> int {
+        using T = std::decay_t<decltype(r)>;
 
-          if constexpr (std::is_same_v<T, parse::ParseOk>) {
-            return main_fn(r.config);
-          } else if constexpr (std::is_same_v<T, parse::HelpRequest>) {
-            if (JCMD_ISATTY(JCMD_STDOUT_FD)) {
-              std::cout << manpage::to_ansi_text(root, r.command_path);
-            } else {
-              std::cout << manpage::to_plain_text(root, r.command_path);
-            }
-            return 0;
-          } else if constexpr (std::is_same_v<T, parse::VersionRequest>) {
-            std::cout << name << " version";
-            if (root.version) {
-              std::cout << " " << *root.version;
-            }
-            std::cout << "\n";
-            return 0;
-          } else if constexpr (std::is_same_v<T, parse::ManpageRequest>) {
-            std::cout << manpage::to_groff(root, r.command_path);
-            return 0;
+        if constexpr (std::is_same_v<T, parse::ParseOk>) {
+          return main_fn(r.config);
+        } else if constexpr (std::is_same_v<T, parse::HelpRequest>) {
+          if (JCMD_ISATTY(JCMD_STDOUT_FD)) {
+            std::cout << manpage::to_ansi_text(root, r.command_path);
+          } else {
+            std::cout << manpage::to_plain_text(root, r.command_path);
           }
-        },
-        result);
+          return 0;
+        } else if constexpr (std::is_same_v<T, parse::VersionRequest>) {
+          std::cout << name << " version";
+          if (root.version) { std::cout << " " << *root.version; }
+          std::cout << "\n";
+          return 0;
+        } else if constexpr (std::is_same_v<T, parse::ManpageRequest>) {
+          std::cout << manpage::to_groff(root, r.command_path);
+          return 0;
+        }
+      },
+      result);
   }
 
   // -------------------------------------------------------------------------
@@ -88,8 +87,9 @@ namespace json_commander {
   // -------------------------------------------------------------------------
 
   inline int
-  run(const std::string &cli_json, int argc, char *argv[], MainFn main_fn) {
-    std::string name = (argc > 0 && argv && argv[0] && argv[0][0] != '\0') ? argv[0] : "error";
+  run(const std::string& cli_json, int argc, char* argv[], MainFn main_fn) {
+    std::string name =
+      (argc > 0 && argv && argv[0] && argv[0][0] != '\0') ? argv[0] : "error";
 
     model::Root root;
     try {
@@ -98,7 +98,8 @@ namespace json_commander {
       root = loader.load(j);
     } catch (...) {
       std::cerr << name
-                << ": invalid CLI definition. Use json-commander validate to check your schema.\n";
+                << ": invalid CLI definition. Use json-commander validate to "
+                   "check your schema.\n";
       return 1;
     }
 
@@ -110,8 +111,13 @@ namespace json_commander {
   // -------------------------------------------------------------------------
 
   inline int
-  run_file(const std::filesystem::path &schema_path, int argc, char *argv[], MainFn main_fn) {
-    std::string name = (argc > 0 && argv && argv[0] && argv[0][0] != '\0') ? argv[0] : "error";
+  run_file(
+    const std::filesystem::path& schema_path,
+    int argc,
+    char* argv[],
+    MainFn main_fn) {
+    std::string name =
+      (argc > 0 && argv && argv[0] && argv[0][0] != '\0') ? argv[0] : "error";
 
     model::Root root;
     try {
@@ -119,7 +125,8 @@ namespace json_commander {
       root = loader.load(schema_path.string());
     } catch (...) {
       std::cerr << name
-                << ": invalid CLI definition. Use json-commander validate to check your schema.\n";
+                << ": invalid CLI definition. Use json-commander validate to "
+                   "check your schema.\n";
       return 1;
     }
 

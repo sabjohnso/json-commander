@@ -32,17 +32,15 @@ namespace json_commander::manpage {
   namespace detail {
 
     inline std::string
-    docstring_to_text(const model::DocString &doc) {
+    docstring_to_text(const model::DocString& doc) {
       std::string result;
       bool in_paragraph = false;
-      for (const auto &line : doc) {
+      for (const auto& line : doc) {
         if (line.empty()) {
           result += "\n\n";
           in_paragraph = false;
         } else {
-          if (in_paragraph) {
-            result += ' ';
-          }
+          if (in_paragraph) { result += ' '; }
           result += line;
           in_paragraph = true;
         }
@@ -51,12 +49,10 @@ namespace json_commander::manpage {
     }
 
     inline std::string
-    format_names(const model::ArgNames &names) {
+    format_names(const model::ArgNames& names) {
       std::string result;
       for (std::size_t i = 0; i < names.size(); ++i) {
-        if (i > 0) {
-          result += ", ";
-        }
+        if (i > 0) { result += ", "; }
         std::string prefix = (names[i].size() == 1) ? "\\-" : "\\-\\-";
         std::string escaped;
         for (char c : names[i]) {
@@ -72,26 +68,25 @@ namespace json_commander::manpage {
     }
 
     inline std::string
-    type_docv(const model::TypeSpec &type,
-              const std::optional<std::vector<std::string>> &choices = std::nullopt) {
+    type_docv(
+      const model::TypeSpec& type,
+      const std::optional<std::vector<std::string>>& choices = std::nullopt) {
       return conv::make(type, choices).docv;
     }
 
     inline std::string
-    format_option_label(const model::Option &opt) {
+    format_option_label(const model::Option& opt) {
       std::string docv = opt.docv.value_or(type_docv(opt.type, opt.choices));
       if (opt.names.size() == 1) {
-        const auto &name = opt.names[0];
+        const auto& name = opt.names[0];
         bool is_short = (name.size() == 1);
         std::string sep = is_short ? " " : "=";
         return format_names(opt.names) + sep + "\\fI" + docv + "\\fR";
       }
       std::string result;
       for (std::size_t i = 0; i < opt.names.size(); ++i) {
-        if (i > 0) {
-          result += ", ";
-        }
-        const auto &name = opt.names[i];
+        if (i > 0) { result += ", "; }
+        const auto& name = opt.names[i];
         bool is_short = (name.size() == 1);
         std::string prefix = is_short ? "\\-" : "\\-\\-";
         std::string escaped;
@@ -103,27 +98,29 @@ namespace json_commander::manpage {
           }
         }
         std::string sep = is_short ? " " : "=";
-        result += "\\fB" + prefix + escaped + "\\fR" + sep + "\\fI" + docv + "\\fR";
+        result +=
+          "\\fB" + prefix + escaped + "\\fR" + sep + "\\fI" + docv + "\\fR";
       }
       return result;
     }
 
     inline std::string
-    format_positional_label(const model::Positional &pos) {
+    format_positional_label(const model::Positional& pos) {
       std::string docv;
       if (pos.docv.has_value()) {
         docv = *pos.docv;
       } else {
         docv = pos.name;
-        std::transform(docv.begin(), docv.end(), docv.begin(), [](unsigned char c) {
-          return std::toupper(c);
-        });
+        std::transform(
+          docv.begin(), docv.end(), docv.begin(), [](unsigned char c) {
+            return std::toupper(c);
+          });
       }
       return "\\fI" + docv + "\\fR";
     }
 
     inline std::string
-    format_flag_group_entry_label(const model::FlagGroupEntry &entry) {
+    format_flag_group_entry_label(const model::FlagGroupEntry& entry) {
       return format_names(entry.names);
     }
 
@@ -137,39 +134,39 @@ namespace json_commander::manpage {
 
     struct StripFont {
       static void
-      on_bold(std::string & /*result*/) {}
+      on_bold(std::string& /*result*/) {}
       static void
-      on_italic(std::string & /*result*/) {}
+      on_italic(std::string& /*result*/) {}
       static void
-      on_reset(std::string & /*result*/) {}
+      on_reset(std::string& /*result*/) {}
       static std::string
-      section_header(const std::string &name) {
+      section_header(const std::string& name) {
         return name + "\n";
       }
     };
 
     struct AnsiFont {
       static void
-      on_bold(std::string &result) {
+      on_bold(std::string& result) {
         result += "\033[1m";
       }
       static void
-      on_italic(std::string &result) {
+      on_italic(std::string& result) {
         result += "\033[4m";
       }
       static void
-      on_reset(std::string &result) {
+      on_reset(std::string& result) {
         result += "\033[0m";
       }
       static std::string
-      section_header(const std::string &name) {
+      section_header(const std::string& name) {
         return "\033[1m" + name + "\033[0m\n";
       }
     };
 
     template <typename FontPolicy>
     inline std::string
-    unescape_with(const std::string &text) {
+    unescape_with(const std::string& text) {
       std::string result;
       result.reserve(text.size());
       for (std::size_t i = 0; i < text.size(); ++i) {
@@ -205,35 +202,39 @@ namespace json_commander::manpage {
 
     template <typename FontPolicy>
     inline std::string
-    render_block_with(const model::ManBlock &block) {
+    render_block_with(const model::ManBlock& block) {
       return std::visit(
-          [](const auto &b) -> std::string {
-            using T = std::decay_t<decltype(b)>;
-            if constexpr (std::is_same_v<T, model::ParagraphBlock>) {
-              return "       " + unescape_with<FontPolicy>(docstring_to_text(b.paragraph)) + "\n";
-            } else if constexpr (std::is_same_v<T, model::PreBlock>) {
-              std::string result;
-              for (const auto &line : b.pre) {
-                result += "       " + line + "\n";
-              }
-              return result;
-            } else if constexpr (std::is_same_v<T, model::LabelTextBlock>) {
-              std::string result;
-              result += "       " + unescape_with<FontPolicy>(b.label) + "\n";
-              result += "           " + unescape_with<FontPolicy>(docstring_to_text(b.text)) + "\n";
-              return result;
-            } else if constexpr (std::is_same_v<T, model::NoBlankBlock>) {
-              return "";
+        [](const auto& b) -> std::string {
+          using T = std::decay_t<decltype(b)>;
+          if constexpr (std::is_same_v<T, model::ParagraphBlock>) {
+            return "       " +
+                   unescape_with<FontPolicy>(docstring_to_text(b.paragraph)) +
+                   "\n";
+          } else if constexpr (std::is_same_v<T, model::PreBlock>) {
+            std::string result;
+            for (const auto& line : b.pre) {
+              result += "       " + line + "\n";
             }
-          },
-          block);
+            return result;
+          } else if constexpr (std::is_same_v<T, model::LabelTextBlock>) {
+            std::string result;
+            result += "       " + unescape_with<FontPolicy>(b.label) + "\n";
+            result += "           " +
+                      unescape_with<FontPolicy>(docstring_to_text(b.text)) +
+                      "\n";
+            return result;
+          } else if constexpr (std::is_same_v<T, model::NoBlankBlock>) {
+            return "";
+          }
+        },
+        block);
     }
 
     template <typename FontPolicy>
     inline std::string
-    render_section_with(const model::ManSection &section) {
+    render_section_with(const model::ManSection& section) {
       std::string result = FontPolicy::section_header(section.name);
-      for (const auto &block : section.blocks) {
+      for (const auto& block : section.blocks) {
         result += render_block_with<FontPolicy>(block);
       }
       result += "\n";
@@ -242,9 +243,11 @@ namespace json_commander::manpage {
 
     template <typename FontPolicy>
     inline std::string
-    render_page_with(const std::string & /*name*/, const std::vector<model::ManSection> &sections) {
+    render_page_with(
+      const std::string& /*name*/,
+      const std::vector<model::ManSection>& sections) {
       std::string result;
-      for (const auto &section : sections) {
+      for (const auto& section : sections) {
         result += render_section_with<FontPolicy>(section);
       }
       return result;
@@ -259,7 +262,7 @@ namespace json_commander::manpage {
   namespace groff {
 
     inline std::string
-    escape(const std::string &text) {
+    escape(const std::string& text) {
       std::string result;
       result.reserve(text.size());
       for (std::size_t i = 0; i < text.size(); ++i) {
@@ -278,50 +281,54 @@ namespace json_commander::manpage {
     }
 
     inline std::string
-    render_block(const model::ManBlock &block) {
+    render_block(const model::ManBlock& block) {
       return std::visit(
-          [](const auto &b) -> std::string {
-            using T = std::decay_t<decltype(b)>;
-            if constexpr (std::is_same_v<T, model::ParagraphBlock>) {
-              return ".PP\n" + detail::docstring_to_text(b.paragraph) + "\n";
-            } else if constexpr (std::is_same_v<T, model::PreBlock>) {
-              std::string result = ".nf\n";
-              for (const auto &line : b.pre) {
-                result += line + "\n";
-              }
-              result += ".fi\n";
-              return result;
-            } else if constexpr (std::is_same_v<T, model::LabelTextBlock>) {
-              return ".TP\n\\fB" + b.label + "\\fR\n" + escape(detail::docstring_to_text(b.text)) +
-                     "\n";
-            } else if constexpr (std::is_same_v<T, model::NoBlankBlock>) {
-              return "";
+        [](const auto& b) -> std::string {
+          using T = std::decay_t<decltype(b)>;
+          if constexpr (std::is_same_v<T, model::ParagraphBlock>) {
+            return ".PP\n" + detail::docstring_to_text(b.paragraph) + "\n";
+          } else if constexpr (std::is_same_v<T, model::PreBlock>) {
+            std::string result = ".nf\n";
+            for (const auto& line : b.pre) {
+              result += line + "\n";
             }
-          },
-          block);
+            result += ".fi\n";
+            return result;
+          } else if constexpr (std::is_same_v<T, model::LabelTextBlock>) {
+            return ".TP\n\\fB" + b.label + "\\fR\n" +
+                   escape(detail::docstring_to_text(b.text)) + "\n";
+          } else if constexpr (std::is_same_v<T, model::NoBlankBlock>) {
+            return "";
+          }
+        },
+        block);
     }
 
     inline std::string
-    render_section(const model::ManSection &section) {
+    render_section(const model::ManSection& section) {
       std::string result = ".SH " + section.name + "\n";
-      for (const auto &block : section.blocks) {
+      for (const auto& block : section.blocks) {
         result += render_block(block);
       }
       return result;
     }
 
     inline std::string
-    render_page(const std::string &name,
-                int man_section,
-                const std::string &version,
-                const std::vector<model::ManSection> &sections) {
+    render_page(
+      const std::string& name,
+      int man_section,
+      const std::string& version,
+      const std::vector<model::ManSection>& sections) {
       std::string upper_name = name;
-      std::transform(upper_name.begin(), upper_name.end(), upper_name.begin(), [](unsigned char c) {
-        return std::toupper(c);
-      });
-      std::string result =
-          ".TH " + upper_name + " " + std::to_string(man_section) + " \"\" \"" + version + "\"\n";
-      for (const auto &section : sections) {
+      std::transform(
+        upper_name.begin(),
+        upper_name.end(),
+        upper_name.begin(),
+        [](unsigned char c) { return std::toupper(c); });
+      std::string result = ".TH " + upper_name + " " +
+                           std::to_string(man_section) + " \"\" \"" + version +
+                           "\"\n";
+      for (const auto& section : sections) {
         result += render_section(section);
       }
       return result;
@@ -336,22 +343,23 @@ namespace json_commander::manpage {
   namespace plain {
 
     inline std::string
-    unescape(const std::string &text) {
+    unescape(const std::string& text) {
       return detail::unescape_with<detail::StripFont>(text);
     }
 
     inline std::string
-    render_block(const model::ManBlock &block) {
+    render_block(const model::ManBlock& block) {
       return detail::render_block_with<detail::StripFont>(block);
     }
 
     inline std::string
-    render_section(const model::ManSection &section) {
+    render_section(const model::ManSection& section) {
       return detail::render_section_with<detail::StripFont>(section);
     }
 
     inline std::string
-    render_page(const std::string &name, const std::vector<model::ManSection> &sections) {
+    render_page(
+      const std::string& name, const std::vector<model::ManSection>& sections) {
       return detail::render_page_with<detail::StripFont>(name, sections);
     }
 
@@ -364,22 +372,23 @@ namespace json_commander::manpage {
   namespace ansi {
 
     inline std::string
-    unescape(const std::string &text) {
+    unescape(const std::string& text) {
       return detail::unescape_with<detail::AnsiFont>(text);
     }
 
     inline std::string
-    render_block(const model::ManBlock &block) {
+    render_block(const model::ManBlock& block) {
       return detail::render_block_with<detail::AnsiFont>(block);
     }
 
     inline std::string
-    render_section(const model::ManSection &section) {
+    render_section(const model::ManSection& section) {
       return detail::render_section_with<detail::AnsiFont>(section);
     }
 
     inline std::string
-    render_page(const std::string &name, const std::vector<model::ManSection> &sections) {
+    render_page(
+      const std::string& name, const std::vector<model::ManSection>& sections) {
       return detail::render_page_with<detail::AnsiFont>(name, sections);
     }
 
@@ -392,66 +401,65 @@ namespace json_commander::manpage {
   namespace detail {
 
     inline std::string
-    arg_section_name(const model::Argument &arg) {
+    arg_section_name(const model::Argument& arg) {
       return std::visit(
-          [](const auto &a) -> std::string {
-            using T = std::decay_t<decltype(a)>;
-            if constexpr (std::is_same_v<T, model::Positional>) {
-              return a.docs.value_or(s_arguments);
-            } else if constexpr (std::is_same_v<T, model::Flag>) {
-              return a.docs.value_or(s_options);
-            } else if constexpr (std::is_same_v<T, model::Option>) {
-              return a.docs.value_or(s_options);
-            } else if constexpr (std::is_same_v<T, model::FlagGroup>) {
-              return a.docs.value_or(s_options);
-            }
-          },
-          arg);
+        [](const auto& a) -> std::string {
+          using T = std::decay_t<decltype(a)>;
+          if constexpr (std::is_same_v<T, model::Positional>) {
+            return a.docs.value_or(s_arguments);
+          } else if constexpr (std::is_same_v<T, model::Flag>) {
+            return a.docs.value_or(s_options);
+          } else if constexpr (std::is_same_v<T, model::Option>) {
+            return a.docs.value_or(s_options);
+          } else if constexpr (std::is_same_v<T, model::FlagGroup>) {
+            return a.docs.value_or(s_options);
+          }
+        },
+        arg);
     }
 
     inline std::vector<model::ManBlock>
-    arg_blocks(const model::Argument &arg) {
+    arg_blocks(const model::Argument& arg) {
       return std::visit(
-          [](const auto &a) -> std::vector<model::ManBlock> {
-            using T = std::decay_t<decltype(a)>;
-            if constexpr (std::is_same_v<T, model::Flag>) {
-              return {model::LabelTextBlock{format_names(a.names), a.doc}};
-            } else if constexpr (std::is_same_v<T, model::Option>) {
-              return {model::LabelTextBlock{format_option_label(a), a.doc}};
-            } else if constexpr (std::is_same_v<T, model::Positional>) {
-              return {model::LabelTextBlock{format_positional_label(a), a.doc}};
-            } else if constexpr (std::is_same_v<T, model::FlagGroup>) {
-              std::vector<model::ManBlock> blocks;
-              for (const auto &entry : a.flags) {
-                blocks.push_back(
-                    model::LabelTextBlock{format_flag_group_entry_label(entry), entry.doc});
-              }
-              return blocks;
+        [](const auto& a) -> std::vector<model::ManBlock> {
+          using T = std::decay_t<decltype(a)>;
+          if constexpr (std::is_same_v<T, model::Flag>) {
+            return {model::LabelTextBlock{format_names(a.names), a.doc}};
+          } else if constexpr (std::is_same_v<T, model::Option>) {
+            return {model::LabelTextBlock{format_option_label(a), a.doc}};
+          } else if constexpr (std::is_same_v<T, model::Positional>) {
+            return {model::LabelTextBlock{format_positional_label(a), a.doc}};
+          } else if constexpr (std::is_same_v<T, model::FlagGroup>) {
+            std::vector<model::ManBlock> blocks;
+            for (const auto& entry : a.flags) {
+              blocks.push_back(
+                model::LabelTextBlock{
+                  format_flag_group_entry_label(entry), entry.doc});
             }
-          },
-          arg);
+            return blocks;
+          }
+        },
+        arg);
     }
 
   } // namespace detail
 
   inline std::vector<model::ManSection>
-  make_arg_sections(const std::vector<model::Argument> &args) {
+  make_arg_sections(const std::vector<model::Argument>& args) {
     // Collect blocks grouped by section name, preserving insertion order
     std::vector<std::string> order;
     std::map<std::string, std::vector<model::ManBlock>> groups;
 
-    for (const auto &arg : args) {
+    for (const auto& arg : args) {
       std::string name = detail::arg_section_name(arg);
-      if (groups.find(name) == groups.end()) {
-        order.push_back(name);
-      }
+      if (groups.find(name) == groups.end()) { order.push_back(name); }
       auto blocks = detail::arg_blocks(arg);
-      auto &dest = groups[name];
+      auto& dest = groups[name];
       dest.insert(dest.end(), blocks.begin(), blocks.end());
     }
 
     std::vector<model::ManSection> sections;
-    for (const auto &name : order) {
+    for (const auto& name : order) {
       sections.push_back({name, groups[name]});
     }
     return sections;
@@ -462,84 +470,81 @@ namespace json_commander::manpage {
   // -------------------------------------------------------------------------
 
   inline model::ManSection
-  make_name_section(const std::string &name, const model::DocString &doc) {
+  make_name_section(const std::string& name, const model::DocString& doc) {
     std::string first_line = doc.empty() ? "" : doc[0];
     return {s_name, {model::ParagraphBlock{{name + " \\- " + first_line}}}};
   }
 
   inline model::ManSection
-  make_synopsis_section(const std::string &name,
-                        const std::vector<model::Argument> &args,
-                        bool has_commands) {
+  make_synopsis_section(
+    const std::string& name,
+    const std::vector<model::Argument>& args,
+    bool has_commands) {
     std::string synopsis = "\\fB" + name + "\\fR";
 
     bool has_options = false;
     std::vector<std::string> positionals;
-    for (const auto &arg : args) {
+    for (const auto& arg : args) {
       std::visit(
-          [&](const auto &a) {
-            using T = std::decay_t<decltype(a)>;
-            if constexpr (std::is_same_v<T, model::Positional>) {
-              std::string docv;
-              if (a.docv.has_value()) {
-                docv = *a.docv;
-              } else {
-                docv = a.name;
-                std::transform(docv.begin(), docv.end(), docv.begin(), [](unsigned char c) {
+        [&](const auto& a) {
+          using T = std::decay_t<decltype(a)>;
+          if constexpr (std::is_same_v<T, model::Positional>) {
+            std::string docv;
+            if (a.docv.has_value()) {
+              docv = *a.docv;
+            } else {
+              docv = a.name;
+              std::transform(
+                docv.begin(), docv.end(), docv.begin(), [](unsigned char c) {
                   return std::toupper(c);
                 });
-              }
-              if (a.required.value_or(false)) {
-                positionals.push_back("\\fI" + docv + "\\fR");
-              } else {
-                positionals.push_back("[\\fI" + docv + "\\fR]");
-              }
-            } else {
-              has_options = true;
             }
-          },
-          arg);
+            if (a.required.value_or(false)) {
+              positionals.push_back("\\fI" + docv + "\\fR");
+            } else {
+              positionals.push_back("[\\fI" + docv + "\\fR]");
+            }
+          } else {
+            has_options = true;
+          }
+        },
+        arg);
     }
 
-    if (has_options) {
-      synopsis += " [OPTIONS]";
-    }
-    for (const auto &p : positionals) {
+    if (has_options) { synopsis += " [OPTIONS]"; }
+    for (const auto& p : positionals) {
       synopsis += " " + p;
     }
-    if (has_commands) {
-      synopsis += " COMMAND";
-    }
+    if (has_commands) { synopsis += " COMMAND"; }
 
     return {s_synopsis, {model::ParagraphBlock{{synopsis}}}};
   }
 
   inline model::ManSection
-  make_commands_section(const std::vector<model::Command> &commands) {
+  make_commands_section(const std::vector<model::Command>& commands) {
     std::vector<model::ManBlock> blocks;
-    for (const auto &cmd : commands) {
-      blocks.push_back(model::LabelTextBlock{"\\fB" + cmd.name + "\\fR", cmd.doc});
+    for (const auto& cmd : commands) {
+      blocks.push_back(
+        model::LabelTextBlock{"\\fB" + cmd.name + "\\fR", cmd.doc});
     }
     return {s_commands, blocks};
   }
 
   inline model::ManSection
-  make_exit_status_section(const std::vector<model::ExitInfo> &exits) {
+  make_exit_status_section(const std::vector<model::ExitInfo>& exits) {
     std::vector<model::ManBlock> blocks;
-    for (const auto &e : exits) {
+    for (const auto& e : exits) {
       std::string label = std::to_string(e.code);
-      if (e.max.has_value()) {
-        label += "-" + std::to_string(*e.max);
-      }
+      if (e.max.has_value()) { label += "-" + std::to_string(*e.max); }
       blocks.push_back(model::LabelTextBlock{label, e.doc});
     }
     return {s_exit_status, blocks};
   }
 
   inline model::ManSection
-  make_environment_section(const std::vector<model::EnvInfo> &envs) {
+  make_environment_section(const std::vector<model::EnvInfo>& envs) {
     std::vector<model::ManBlock> blocks;
-    for (const auto &e : envs) {
+    for (const auto& e : envs) {
       model::DocString doc = e.doc.value_or(model::DocString{});
       blocks.push_back(model::LabelTextBlock{"\\fB" + e.var + "\\fR", doc});
     }
@@ -547,13 +552,12 @@ namespace json_commander::manpage {
   }
 
   inline model::ManSection
-  make_see_also_section(const std::vector<model::ManXref> &xrefs) {
+  make_see_also_section(const std::vector<model::ManXref>& xrefs) {
     std::string text;
     for (std::size_t i = 0; i < xrefs.size(); ++i) {
-      if (i > 0) {
-        text += ", ";
-      }
-      text += "\\fB" + xrefs[i].name + "\\fR(" + std::to_string(xrefs[i].section) + ")";
+      if (i > 0) { text += ", "; }
+      text += "\\fB" + xrefs[i].name + "\\fR(" +
+              std::to_string(xrefs[i].section) + ")";
     }
     return {s_see_also, {model::ParagraphBlock{{text}}}};
   }
@@ -563,22 +567,20 @@ namespace json_commander::manpage {
   // -------------------------------------------------------------------------
 
   inline int
-  section_order(const std::string &name) {
+  section_order(const std::string& name) {
     static const std::vector<std::string> order = {
-        s_name,
-        s_synopsis,
-        s_description,
-        s_commands,
-        s_arguments,
-        s_options,
-        s_exit_status,
-        s_environment,
-        s_see_also,
+      s_name,
+      s_synopsis,
+      s_description,
+      s_commands,
+      s_arguments,
+      s_options,
+      s_exit_status,
+      s_environment,
+      s_see_also,
     };
     for (int i = 0; i < static_cast<int>(order.size()); ++i) {
-      if (order[i] == name) {
-        return i;
-      }
+      if (order[i] == name) { return i; }
     }
     return static_cast<int>(order.size());
   }
@@ -589,17 +591,21 @@ namespace json_commander::manpage {
 
   template <typename T>
   std::vector<model::ManSection>
-  assemble(const T &root, const std::string &display_name, const std::string &synopsis_name = "") {
+  assemble(
+    const T& root,
+    const std::string& display_name,
+    const std::string& synopsis_name = "") {
     std::map<std::string, model::ManSection> section_map;
     std::vector<std::string> section_names;
 
-    auto add_section = [&](const model::ManSection &s) {
+    auto add_section = [&](const model::ManSection& s) {
       if (section_map.find(s.name) == section_map.end()) {
         section_names.push_back(s.name);
         section_map[s.name] = s;
       } else {
-        auto &existing = section_map[s.name];
-        existing.blocks.insert(existing.blocks.end(), s.blocks.begin(), s.blocks.end());
+        auto& existing = section_map[s.name];
+        existing.blocks.insert(
+          existing.blocks.end(), s.blocks.begin(), s.blocks.end());
       }
     };
 
@@ -607,27 +613,28 @@ namespace json_commander::manpage {
     add_section(make_name_section(display_name, root.doc));
 
     // SYNOPSIS (space-separated for subcommands)
-    const std::string &syn_name = synopsis_name.empty() ? display_name : synopsis_name;
+    const std::string& syn_name =
+      synopsis_name.empty() ? display_name : synopsis_name;
     bool has_commands = root.commands.has_value() && !root.commands->empty();
     add_section(make_synopsis_section(
-        syn_name, root.args.value_or(std::vector<model::Argument>{}), has_commands));
+      syn_name,
+      root.args.value_or(std::vector<model::Argument>{}),
+      has_commands));
 
     // User-provided sections
     if (root.man.has_value() && root.man->sections.has_value()) {
-      for (const auto &s : *root.man->sections) {
+      for (const auto& s : *root.man->sections) {
         add_section(s);
       }
     }
 
     // COMMANDS
-    if (has_commands) {
-      add_section(make_commands_section(*root.commands));
-    }
+    if (has_commands) { add_section(make_commands_section(*root.commands)); }
 
     // Argument sections (OPTIONS, ARGUMENTS, custom)
     if (root.args.has_value()) {
       auto arg_secs = make_arg_sections(*root.args);
-      for (const auto &s : arg_secs) {
+      for (const auto& s : arg_secs) {
         add_section(s);
       }
     }
@@ -643,18 +650,22 @@ namespace json_commander::manpage {
     }
 
     // SEE ALSO
-    if (root.man.has_value() && root.man->xrefs.has_value() && !root.man->xrefs->empty()) {
+    if (
+      root.man.has_value() && root.man->xrefs.has_value() &&
+      !root.man->xrefs->empty()) {
       add_section(make_see_also_section(*root.man->xrefs));
     }
 
     // Sort by standard ordering
     std::sort(
-        section_names.begin(), section_names.end(), [](const std::string &a, const std::string &b) {
-          return section_order(a) < section_order(b);
-        });
+      section_names.begin(),
+      section_names.end(),
+      [](const std::string& a, const std::string& b) {
+        return section_order(a) < section_order(b);
+      });
 
     std::vector<model::ManSection> result;
-    for (const auto &name : section_names) {
+    for (const auto& name : section_names) {
       result.push_back(section_map[name]);
     }
     return result;
@@ -664,22 +675,20 @@ namespace json_commander::manpage {
   // Subcommand lookup
   // -------------------------------------------------------------------------
 
-  inline const model::Command &
-  find_command(const model::Root &root, const std::vector<std::string> &path) {
-    if (path.empty()) {
-      throw std::runtime_error("find_command: empty path");
-    }
+  inline const model::Command&
+  find_command(const model::Root& root, const std::vector<std::string>& path) {
+    if (path.empty()) { throw std::runtime_error("find_command: empty path"); }
 
-    const std::vector<model::Command> *commands =
-        root.commands.has_value() ? &*root.commands : nullptr;
-    const model::Command *current = nullptr;
+    const std::vector<model::Command>* commands =
+      root.commands.has_value() ? &*root.commands : nullptr;
+    const model::Command* current = nullptr;
 
-    for (const auto &segment : path) {
+    for (const auto& segment : path) {
       if (!commands) {
         throw std::runtime_error("subcommand not found: " + segment);
       }
       bool found = false;
-      for (const auto &cmd : *commands) {
+      for (const auto& cmd : *commands) {
         if (cmd.name == segment) {
           current = &cmd;
           commands = cmd.commands.has_value() ? &*cmd.commands : nullptr;
@@ -700,7 +709,7 @@ namespace json_commander::manpage {
   // -------------------------------------------------------------------------
 
   inline std::string
-  to_groff(const model::Root &root) {
+  to_groff(const model::Root& root) {
     int man_section = 1;
     if (root.man.has_value() && root.man->section.has_value()) {
       man_section = *root.man->section;
@@ -711,10 +720,11 @@ namespace json_commander::manpage {
   }
 
   inline std::string
-  to_groff(const model::Command &cmd,
-           const std::string &full_name,
-           const std::string &version = "",
-           const std::string &synopsis_name = "") {
+  to_groff(
+    const model::Command& cmd,
+    const std::string& full_name,
+    const std::string& version = "",
+    const std::string& synopsis_name = "") {
     int man_section = 1;
     if (cmd.man.has_value() && cmd.man->section.has_value()) {
       man_section = *cmd.man->section;
@@ -724,17 +734,16 @@ namespace json_commander::manpage {
   }
 
   inline std::string
-  to_groff(const model::Root &root, const std::vector<std::string> &command_path) {
-    if (command_path.empty()) {
-      return to_groff(root);
-    }
+  to_groff(
+    const model::Root& root, const std::vector<std::string>& command_path) {
+    if (command_path.empty()) { return to_groff(root); }
 
     std::string version = root.version.value_or("");
-    const auto &cmd = find_command(root, command_path);
+    const auto& cmd = find_command(root, command_path);
 
     std::string full_name = root.name;
     std::string syn_name = root.name;
-    for (const auto &segment : command_path) {
+    for (const auto& segment : command_path) {
       full_name += "-" + segment;
       syn_name += " " + segment;
     }
@@ -747,30 +756,30 @@ namespace json_commander::manpage {
   // -------------------------------------------------------------------------
 
   inline std::string
-  to_plain_text(const model::Root &root) {
+  to_plain_text(const model::Root& root) {
     auto sections = assemble(root, root.name);
     return plain::render_page(root.name, sections);
   }
 
   inline std::string
-  to_plain_text(const model::Command &cmd,
-                const std::string &full_name,
-                const std::string &synopsis_name = "") {
+  to_plain_text(
+    const model::Command& cmd,
+    const std::string& full_name,
+    const std::string& synopsis_name = "") {
     auto sections = assemble(cmd, full_name, synopsis_name);
     return plain::render_page(full_name, sections);
   }
 
   inline std::string
-  to_plain_text(const model::Root &root, const std::vector<std::string> &command_path) {
-    if (command_path.empty()) {
-      return to_plain_text(root);
-    }
+  to_plain_text(
+    const model::Root& root, const std::vector<std::string>& command_path) {
+    if (command_path.empty()) { return to_plain_text(root); }
 
-    const auto &cmd = find_command(root, command_path);
+    const auto& cmd = find_command(root, command_path);
 
     std::string full_name = root.name;
     std::string syn_name = root.name;
-    for (const auto &segment : command_path) {
+    for (const auto& segment : command_path) {
       full_name += "-" + segment;
       syn_name += " " + segment;
     }
@@ -783,30 +792,30 @@ namespace json_commander::manpage {
   // -------------------------------------------------------------------------
 
   inline std::string
-  to_ansi_text(const model::Root &root) {
+  to_ansi_text(const model::Root& root) {
     auto sections = assemble(root, root.name);
     return ansi::render_page(root.name, sections);
   }
 
   inline std::string
-  to_ansi_text(const model::Command &cmd,
-               const std::string &full_name,
-               const std::string &synopsis_name = "") {
+  to_ansi_text(
+    const model::Command& cmd,
+    const std::string& full_name,
+    const std::string& synopsis_name = "") {
     auto sections = assemble(cmd, full_name, synopsis_name);
     return ansi::render_page(full_name, sections);
   }
 
   inline std::string
-  to_ansi_text(const model::Root &root, const std::vector<std::string> &command_path) {
-    if (command_path.empty()) {
-      return to_ansi_text(root);
-    }
+  to_ansi_text(
+    const model::Root& root, const std::vector<std::string>& command_path) {
+    if (command_path.empty()) { return to_ansi_text(root); }
 
-    const auto &cmd = find_command(root, command_path);
+    const auto& cmd = find_command(root, command_path);
 
     std::string full_name = root.name;
     std::string syn_name = root.name;
-    for (const auto &segment : command_path) {
+    for (const auto& segment : command_path) {
       full_name += "-" + segment;
       syn_name += " " + segment;
     }

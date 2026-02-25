@@ -15,15 +15,15 @@ namespace json_commander::model {
 
     template <typename T>
     void
-    set_optional(nlohmann::json &j, const char *key, const std::optional<T> &opt) {
-      if (opt.has_value()) {
-        j[key] = *opt;
-      }
+    set_optional(
+      nlohmann::json& j, const char* key, const std::optional<T>& opt) {
+      if (opt.has_value()) { j[key] = *opt; }
     }
 
     template <typename T>
     void
-    get_optional(const nlohmann::json &j, const char *key, std::optional<T> &opt) {
+    get_optional(
+      const nlohmann::json& j, const char* key, std::optional<T>& opt) {
       if (j.contains(key)) {
         opt = j.at(key).get<T>();
       } else {
@@ -38,25 +38,26 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const ScalarType &s) {
-    static const char *names[] = {"string", "int", "float", "bool", "enum", "file", "dir", "path"};
+  to_json(nlohmann::json& j, const ScalarType& s) {
+    static const char* names[] = {
+      "string", "int", "float", "bool", "enum", "file", "dir", "path"};
     j = names[static_cast<int>(s)];
   }
 
   inline void
-  from_json(const nlohmann::json &j, ScalarType &s) {
-    static const std::pair<const char *, ScalarType> table[] = {
-        {"string", ScalarType::String},
-        {"int", ScalarType::Int},
-        {"float", ScalarType::Float},
-        {"bool", ScalarType::Bool},
-        {"enum", ScalarType::Enum},
-        {"file", ScalarType::File},
-        {"dir", ScalarType::Dir},
-        {"path", ScalarType::Path},
+  from_json(const nlohmann::json& j, ScalarType& s) {
+    static const std::pair<const char*, ScalarType> table[] = {
+      {"string", ScalarType::String},
+      {"int", ScalarType::Int},
+      {"float", ScalarType::Float},
+      {"bool", ScalarType::Bool},
+      {"enum", ScalarType::Enum},
+      {"file", ScalarType::File},
+      {"dir", ScalarType::Dir},
+      {"path", ScalarType::Path},
     };
     auto str = j.get<std::string>();
-    for (const auto &[name, val] : table) {
+    for (const auto& [name, val] : table) {
       if (str == name) {
         s = val;
         return;
@@ -70,7 +71,7 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const ListType &lt) {
+  to_json(nlohmann::json& j, const ListType& lt) {
     nlohmann::json inner;
     inner["element"] = lt.element;
     detail::set_optional(inner, "separator", lt.separator);
@@ -78,8 +79,8 @@ namespace json_commander::model {
   }
 
   inline void
-  from_json(const nlohmann::json &j, ListType &lt) {
-    const auto &inner = j.at("list");
+  from_json(const nlohmann::json& j, ListType& lt) {
+    const auto& inner = j.at("list");
     inner.at("element").get_to(lt.element);
     detail::get_optional(inner, "separator", lt.separator);
   }
@@ -89,7 +90,7 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const PairType &pt) {
+  to_json(nlohmann::json& j, const PairType& pt) {
     nlohmann::json inner;
     inner["first"] = pt.first;
     inner["second"] = pt.second;
@@ -98,8 +99,8 @@ namespace json_commander::model {
   }
 
   inline void
-  from_json(const nlohmann::json &j, PairType &pt) {
-    const auto &inner = j.at("pair");
+  from_json(const nlohmann::json& j, PairType& pt) {
+    const auto& inner = j.at("pair");
     inner.at("first").get_to(pt.first);
     inner.at("second").get_to(pt.second);
     detail::get_optional(inner, "separator", pt.separator);
@@ -110,7 +111,7 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const TripleType &tt) {
+  to_json(nlohmann::json& j, const TripleType& tt) {
     nlohmann::json inner;
     inner["first"] = tt.first;
     inner["second"] = tt.second;
@@ -120,8 +121,8 @@ namespace json_commander::model {
   }
 
   inline void
-  from_json(const nlohmann::json &j, TripleType &tt) {
-    const auto &inner = j.at("triple");
+  from_json(const nlohmann::json& j, TripleType& tt) {
+    const auto& inner = j.at("triple");
     inner.at("first").get_to(tt.first);
     inner.at("second").get_to(tt.second);
     inner.at("third").get_to(tt.third);
@@ -133,12 +134,12 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const TypeSpec &ts) {
-    std::visit([&j](const auto &v) { to_json(j, v); }, ts);
+  to_json(nlohmann::json& j, const TypeSpec& ts) {
+    std::visit([&j](const auto& v) { to_json(j, v); }, ts);
   }
 
   inline void
-  from_json(const nlohmann::json &j, TypeSpec &ts) {
+  from_json(const nlohmann::json& j, TypeSpec& ts) {
     if (j.is_string()) {
       ScalarType s;
       from_json(j, s);
@@ -165,14 +166,14 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const EnvBindingObj &e) {
+  to_json(nlohmann::json& j, const EnvBindingObj& e) {
     j = nlohmann::json::object();
     j["var"] = e.var;
     detail::set_optional(j, "doc", e.doc);
   }
 
   inline void
-  from_json(const nlohmann::json &j, EnvBindingObj &e) {
+  from_json(const nlohmann::json& j, EnvBindingObj& e) {
     j.at("var").get_to(e.var);
     detail::get_optional(j, "doc", e.doc);
   }
@@ -182,21 +183,21 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const EnvBinding &eb) {
+  to_json(nlohmann::json& j, const EnvBinding& eb) {
     std::visit(
-        [&j](const auto &v) {
-          using T = std::decay_t<decltype(v)>;
-          if constexpr (std::is_same_v<T, std::string>) {
-            j = v;
-          } else {
-            to_json(j, v);
-          }
-        },
-        eb);
+      [&j](const auto& v) {
+        using T = std::decay_t<decltype(v)>;
+        if constexpr (std::is_same_v<T, std::string>) {
+          j = v;
+        } else {
+          to_json(j, v);
+        }
+      },
+      eb);
   }
 
   inline void
-  from_json(const nlohmann::json &j, EnvBinding &eb) {
+  from_json(const nlohmann::json& j, EnvBinding& eb) {
     if (j.is_string()) {
       eb = j.get<std::string>();
     } else {
@@ -211,14 +212,14 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const EnvInfo &e) {
+  to_json(nlohmann::json& j, const EnvInfo& e) {
     j = nlohmann::json::object();
     j["var"] = e.var;
     detail::set_optional(j, "doc", e.doc);
   }
 
   inline void
-  from_json(const nlohmann::json &j, EnvInfo &e) {
+  from_json(const nlohmann::json& j, EnvInfo& e) {
     j.at("var").get_to(e.var);
     detail::get_optional(j, "doc", e.doc);
   }
@@ -228,7 +229,7 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const ExitInfo &e) {
+  to_json(nlohmann::json& j, const ExitInfo& e) {
     j = nlohmann::json::object();
     j["code"] = e.code;
     detail::set_optional(j, "max", e.max);
@@ -236,7 +237,7 @@ namespace json_commander::model {
   }
 
   inline void
-  from_json(const nlohmann::json &j, ExitInfo &e) {
+  from_json(const nlohmann::json& j, ExitInfo& e) {
     j.at("code").get_to(e.code);
     detail::get_optional(j, "max", e.max);
     j.at("doc").get_to(e.doc);
@@ -247,7 +248,7 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const Flag &f) {
+  to_json(nlohmann::json& j, const Flag& f) {
     j = nlohmann::json::object();
     j["kind"] = "flag";
     j["names"] = f.names;
@@ -260,7 +261,7 @@ namespace json_commander::model {
   }
 
   inline void
-  from_json(const nlohmann::json &j, Flag &f) {
+  from_json(const nlohmann::json& j, Flag& f) {
     j.at("names").get_to(f.names);
     j.at("doc").get_to(f.doc);
     detail::get_optional(j, "dest", f.dest);
@@ -275,7 +276,7 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const FlagGroupEntry &e) {
+  to_json(nlohmann::json& j, const FlagGroupEntry& e) {
     j = nlohmann::json::object();
     j["names"] = e.names;
     j["doc"] = e.doc;
@@ -283,7 +284,7 @@ namespace json_commander::model {
   }
 
   inline void
-  from_json(const nlohmann::json &j, FlagGroupEntry &e) {
+  from_json(const nlohmann::json& j, FlagGroupEntry& e) {
     j.at("names").get_to(e.names);
     j.at("doc").get_to(e.doc);
     e.value = j.at("value");
@@ -294,7 +295,7 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const FlagGroup &fg) {
+  to_json(nlohmann::json& j, const FlagGroup& fg) {
     j = nlohmann::json::object();
     j["kind"] = "flag_group";
     j["dest"] = fg.dest;
@@ -306,7 +307,7 @@ namespace json_commander::model {
   }
 
   inline void
-  from_json(const nlohmann::json &j, FlagGroup &fg) {
+  from_json(const nlohmann::json& j, FlagGroup& fg) {
     j.at("dest").get_to(fg.dest);
     j.at("doc").get_to(fg.doc);
     fg.default_value = j.at("default");
@@ -320,16 +321,14 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const Option &o) {
+  to_json(nlohmann::json& j, const Option& o) {
     j = nlohmann::json::object();
     j["kind"] = "option";
     j["names"] = o.names;
     j["doc"] = o.doc;
     j["type"] = o.type;
     detail::set_optional(j, "docv", o.docv);
-    if (o.default_value.has_value()) {
-      j["default"] = *o.default_value;
-    }
+    if (o.default_value.has_value()) { j["default"] = *o.default_value; }
     detail::set_optional(j, "required", o.required);
     detail::set_optional(j, "repeated", o.repeated);
     detail::set_optional(j, "choices", o.choices);
@@ -340,7 +339,7 @@ namespace json_commander::model {
   }
 
   inline void
-  from_json(const nlohmann::json &j, Option &o) {
+  from_json(const nlohmann::json& j, Option& o) {
     j.at("names").get_to(o.names);
     j.at("doc").get_to(o.doc);
     j.at("type").get_to(o.type);
@@ -364,16 +363,14 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const Positional &p) {
+  to_json(nlohmann::json& j, const Positional& p) {
     j = nlohmann::json::object();
     j["kind"] = "positional";
     j["name"] = p.name;
     j["doc"] = p.doc;
     j["type"] = p.type;
     detail::set_optional(j, "docv", p.docv);
-    if (p.default_value.has_value()) {
-      j["default"] = *p.default_value;
-    }
+    if (p.default_value.has_value()) { j["default"] = *p.default_value; }
     detail::set_optional(j, "required", p.required);
     detail::set_optional(j, "repeated", p.repeated);
     detail::set_optional(j, "must_exist", p.must_exist);
@@ -381,7 +378,7 @@ namespace json_commander::model {
   }
 
   inline void
-  from_json(const nlohmann::json &j, Positional &p) {
+  from_json(const nlohmann::json& j, Positional& p) {
     j.at("name").get_to(p.name);
     j.at("doc").get_to(p.doc);
     j.at("type").get_to(p.type);
@@ -402,12 +399,12 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const Argument &a) {
-    std::visit([&j](const auto &v) { to_json(j, v); }, a);
+  to_json(nlohmann::json& j, const Argument& a) {
+    std::visit([&j](const auto& v) { to_json(j, v); }, a);
   }
 
   inline void
-  from_json(const nlohmann::json &j, Argument &a) {
+  from_json(const nlohmann::json& j, Argument& a) {
     auto kind = j.at("kind").get<std::string>();
     if (kind == "flag") {
       Flag f;
@@ -435,13 +432,13 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const ParagraphBlock &b) {
+  to_json(nlohmann::json& j, const ParagraphBlock& b) {
     j = nlohmann::json::object();
     j["paragraph"] = b.paragraph;
   }
 
   inline void
-  from_json(const nlohmann::json &j, ParagraphBlock &b) {
+  from_json(const nlohmann::json& j, ParagraphBlock& b) {
     j.at("paragraph").get_to(b.paragraph);
   }
 
@@ -450,13 +447,13 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const PreBlock &b) {
+  to_json(nlohmann::json& j, const PreBlock& b) {
     j = nlohmann::json::object();
     j["pre"] = b.pre;
   }
 
   inline void
-  from_json(const nlohmann::json &j, PreBlock &b) {
+  from_json(const nlohmann::json& j, PreBlock& b) {
     j.at("pre").get_to(b.pre);
   }
 
@@ -465,14 +462,14 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const LabelTextBlock &b) {
+  to_json(nlohmann::json& j, const LabelTextBlock& b) {
     j = nlohmann::json::object();
     j["label"] = b.label;
     j["text"] = b.text;
   }
 
   inline void
-  from_json(const nlohmann::json &j, LabelTextBlock &b) {
+  from_json(const nlohmann::json& j, LabelTextBlock& b) {
     j.at("label").get_to(b.label);
     j.at("text").get_to(b.text);
   }
@@ -482,25 +479,25 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const NoBlankBlock &) {
+  to_json(nlohmann::json& j, const NoBlankBlock&) {
     j = nlohmann::json::object();
     j["noblank"] = true;
   }
 
   inline void
-  from_json(const nlohmann::json &, NoBlankBlock &) {}
+  from_json(const nlohmann::json&, NoBlankBlock&) {}
 
   // ---------------------------------------------------------------------------
   // ManBlock
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const ManBlock &mb) {
-    std::visit([&j](const auto &v) { to_json(j, v); }, mb);
+  to_json(nlohmann::json& j, const ManBlock& mb) {
+    std::visit([&j](const auto& v) { to_json(j, v); }, mb);
   }
 
   inline void
-  from_json(const nlohmann::json &j, ManBlock &mb) {
+  from_json(const nlohmann::json& j, ManBlock& mb) {
     if (j.contains("paragraph")) {
       ParagraphBlock b;
       from_json(j, b);
@@ -525,14 +522,14 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const ManSection &s) {
+  to_json(nlohmann::json& j, const ManSection& s) {
     j = nlohmann::json::object();
     j["name"] = s.name;
     j["blocks"] = s.blocks;
   }
 
   inline void
-  from_json(const nlohmann::json &j, ManSection &s) {
+  from_json(const nlohmann::json& j, ManSection& s) {
     j.at("name").get_to(s.name);
     j.at("blocks").get_to(s.blocks);
   }
@@ -542,14 +539,14 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const ManXref &x) {
+  to_json(nlohmann::json& j, const ManXref& x) {
     j = nlohmann::json::object();
     j["name"] = x.name;
     j["section"] = x.section;
   }
 
   inline void
-  from_json(const nlohmann::json &j, ManXref &x) {
+  from_json(const nlohmann::json& j, ManXref& x) {
     j.at("name").get_to(x.name);
     j.at("section").get_to(x.section);
   }
@@ -559,7 +556,7 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const Man &m) {
+  to_json(nlohmann::json& j, const Man& m) {
     j = nlohmann::json::object();
     detail::set_optional(j, "section", m.section);
     detail::set_optional(j, "sections", m.sections);
@@ -567,7 +564,7 @@ namespace json_commander::model {
   }
 
   inline void
-  from_json(const nlohmann::json &j, Man &m) {
+  from_json(const nlohmann::json& j, Man& m) {
     detail::get_optional(j, "section", m.section);
     detail::get_optional(j, "sections", m.sections);
     detail::get_optional(j, "xrefs", m.xrefs);
@@ -578,7 +575,7 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const ConfigPaths &cp) {
+  to_json(nlohmann::json& j, const ConfigPaths& cp) {
     j = nlohmann::json::object();
     detail::set_optional(j, "system", cp.system);
     detail::set_optional(j, "user", cp.user);
@@ -586,7 +583,7 @@ namespace json_commander::model {
   }
 
   inline void
-  from_json(const nlohmann::json &j, ConfigPaths &cp) {
+  from_json(const nlohmann::json& j, ConfigPaths& cp) {
     detail::get_optional(j, "system", cp.system);
     detail::get_optional(j, "user", cp.user);
     detail::get_optional(j, "local", cp.local);
@@ -597,14 +594,14 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const Config &c) {
+  to_json(nlohmann::json& j, const Config& c) {
     j = nlohmann::json::object();
     j["format"] = c.format;
     detail::set_optional(j, "paths", c.paths);
   }
 
   inline void
-  from_json(const nlohmann::json &j, Config &c) {
+  from_json(const nlohmann::json& j, Config& c) {
     j.at("format").get_to(c.format);
     detail::get_optional(j, "paths", c.paths);
   }
@@ -614,7 +611,7 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const Command &cmd) {
+  to_json(nlohmann::json& j, const Command& cmd) {
     j = nlohmann::json::object();
     j["name"] = cmd.name;
     j["doc"] = cmd.doc;
@@ -626,7 +623,7 @@ namespace json_commander::model {
   }
 
   inline void
-  from_json(const nlohmann::json &j, Command &cmd) {
+  from_json(const nlohmann::json& j, Command& cmd) {
     j.at("name").get_to(cmd.name);
     j.at("doc").get_to(cmd.doc);
     detail::get_optional(j, "args", cmd.args);
@@ -641,7 +638,7 @@ namespace json_commander::model {
   // ---------------------------------------------------------------------------
 
   inline void
-  to_json(nlohmann::json &j, const Root &r) {
+  to_json(nlohmann::json& j, const Root& r) {
     j = nlohmann::json::object();
     j["name"] = r.name;
     j["doc"] = r.doc;
@@ -655,7 +652,7 @@ namespace json_commander::model {
   }
 
   inline void
-  from_json(const nlohmann::json &j, Root &r) {
+  from_json(const nlohmann::json& j, Root& r) {
     j.at("name").get_to(r.name);
     j.at("doc").get_to(r.doc);
     detail::get_optional(j, "args", r.args);

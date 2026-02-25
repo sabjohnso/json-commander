@@ -20,7 +20,8 @@ namespace json_commander::parse {
 
   class Error : public std::runtime_error {
   public:
-    explicit Error(const std::string &message) : std::runtime_error(message) {}
+    explicit Error(const std::string& message)
+        : std::runtime_error(message) {}
   };
 
   // -------------------------------------------------------------------------
@@ -42,28 +43,30 @@ namespace json_commander::parse {
     std::vector<std::string> command_path;
   };
 
-  using ParseResult = std::variant<ParseOk, HelpRequest, VersionRequest, ManpageRequest>;
+  using ParseResult =
+    std::variant<ParseOk, HelpRequest, VersionRequest, ManpageRequest>;
 
   // -------------------------------------------------------------------------
   // Environment lookup
   // -------------------------------------------------------------------------
 
-  using EnvLookup = std::function<std::optional<std::string>(const std::string &)>;
+  using EnvLookup =
+    std::function<std::optional<std::string>(const std::string&)>;
 
   inline EnvLookup
   default_env_lookup() {
-    return [](const std::string &var) -> std::optional<std::string> {
-      const char *val = std::getenv(var.c_str());
-      if (val == nullptr) {
-        return std::nullopt;
-      }
+    return [](const std::string& var) -> std::optional<std::string> {
+      const char* val = std::getenv(var.c_str());
+      if (val == nullptr) { return std::nullopt; }
       return std::string(val);
     };
   }
 
   inline EnvLookup
   no_env() {
-    return [](const std::string &) -> std::optional<std::string> { return std::nullopt; };
+    return [](const std::string&) -> std::optional<std::string> {
+      return std::nullopt;
+    };
   }
 
   // -------------------------------------------------------------------------
@@ -85,53 +88,49 @@ namespace json_commander::parse {
 
     public:
       void
-      insert(const std::string &cli_name, MatchResult result) {
+      insert(const std::string& cli_name, MatchResult result) {
         entries_.emplace(cli_name, result);
       }
 
       std::optional<MatchResult>
-      lookup(const std::string &cli_name) const {
+      lookup(const std::string& cli_name) const {
         auto it = entries_.find(cli_name);
-        if (it == entries_.end()) {
-          return std::nullopt;
-        }
+        if (it == entries_.end()) { return std::nullopt; }
         return it->second;
       }
     };
 
     inline std::string
-    cli_name(const std::string &name) {
-      if (name.size() == 1) {
-        return "-" + name;
-      }
+    cli_name(const std::string& name) {
+      if (name.size() == 1) { return "-" + name; }
       return "--" + name;
     }
 
     inline NameIndex
-    build_index(const std::vector<arg::ArgSpec> &args) {
+    build_index(const std::vector<arg::ArgSpec>& args) {
       NameIndex index;
       for (std::size_t i = 0; i < args.size(); ++i) {
         std::visit(
-            [&](const auto &spec) {
-              using T = std::decay_t<decltype(spec)>;
-              if constexpr (std::is_same_v<T, arg::FlagSpec>) {
-                for (const auto &name : spec.names) {
-                  index.insert(cli_name(name), {i, MatchKind::Flag, 0});
-                }
-              } else if constexpr (std::is_same_v<T, arg::OptionSpec>) {
-                for (const auto &name : spec.names) {
-                  index.insert(cli_name(name), {i, MatchKind::Option, 0});
-                }
-              } else if constexpr (std::is_same_v<T, arg::FlagGroupSpec>) {
-                for (std::size_t e = 0; e < spec.entries.size(); ++e) {
-                  for (const auto &name : spec.entries[e].names) {
-                    index.insert(cli_name(name), {i, MatchKind::FlagGroup, e});
-                  }
+          [&](const auto& spec) {
+            using T = std::decay_t<decltype(spec)>;
+            if constexpr (std::is_same_v<T, arg::FlagSpec>) {
+              for (const auto& name : spec.names) {
+                index.insert(cli_name(name), {i, MatchKind::Flag, 0});
+              }
+            } else if constexpr (std::is_same_v<T, arg::OptionSpec>) {
+              for (const auto& name : spec.names) {
+                index.insert(cli_name(name), {i, MatchKind::Option, 0});
+              }
+            } else if constexpr (std::is_same_v<T, arg::FlagGroupSpec>) {
+              for (std::size_t e = 0; e < spec.entries.size(); ++e) {
+                for (const auto& name : spec.entries[e].names) {
+                  index.insert(cli_name(name), {i, MatchKind::FlagGroup, e});
                 }
               }
-              // PositionalSpec: not indexed
-            },
-            args[i]);
+            }
+            // PositionalSpec: not indexed
+          },
+          args[i]);
       }
       return index;
     }
@@ -143,10 +142,8 @@ namespace json_commander::parse {
     enum class TokenKind { LongOption, ShortGroup, DoubleDash, Positional };
 
     inline TokenKind
-    classify_token(const std::string &token) {
-      if (token == "--") {
-        return TokenKind::DoubleDash;
-      }
+    classify_token(const std::string& token) {
+      if (token == "--") { return TokenKind::DoubleDash; }
       if (token.size() >= 3 && token[0] == '-' && token[1] == '-') {
         return TokenKind::LongOption;
       }
@@ -162,12 +159,10 @@ namespace json_commander::parse {
     };
 
     inline SplitResult
-    split_long_option(const std::string &token) {
+    split_long_option(const std::string& token) {
       auto stripped = token.substr(2); // remove leading --
       auto eq = stripped.find('=');
-      if (eq == std::string::npos) {
-        return {stripped, std::nullopt};
-      }
+      if (eq == std::string::npos) { return {stripped, std::nullopt}; }
       return {stripped.substr(0, eq), stripped.substr(eq + 1)};
     }
 
@@ -181,15 +176,17 @@ namespace json_commander::parse {
       std::size_t next_pos;
     };
 
-    using LevelResult = std::variant<LevelOk, HelpRequest, VersionRequest, ManpageRequest>;
+    using LevelResult =
+      std::variant<LevelOk, HelpRequest, VersionRequest, ManpageRequest>;
 
     inline LevelResult
-    parse_level(const std::vector<arg::ArgSpec> &args,
-                const std::vector<cmd::CommandSpec> &commands,
-                const std::vector<std::string> &tokens,
-                std::size_t start,
-                bool is_root,
-                const std::optional<std::string> &version) {
+    parse_level(
+      const std::vector<arg::ArgSpec>& args,
+      const std::vector<cmd::CommandSpec>& commands,
+      const std::vector<std::string>& tokens,
+      std::size_t start,
+      bool is_root,
+      const std::optional<std::string>& version) {
       auto index = build_index(args);
       nlohmann::json config = nlohmann::json::object();
       std::vector<std::string> command_path;
@@ -210,7 +207,7 @@ namespace json_commander::parse {
       std::size_t i = start;
 
       while (i < tokens.size()) {
-        const auto &token = tokens[i];
+        const auto& token = tokens[i];
 
         if (!options_terminated) {
           auto kind = classify_token(token);
@@ -227,9 +224,7 @@ namespace json_commander::parse {
           }
 
           // Check for --help-man
-          if (token == "--help-man") {
-            return ManpageRequest{command_path};
-          }
+          if (token == "--help-man") { return ManpageRequest{command_path}; }
 
           // Check for --version at root
           if (is_root && token == "--version") {
@@ -247,7 +242,7 @@ namespace json_commander::parse {
             }
 
             if (match->kind == MatchKind::Flag) {
-              auto &flag = std::get<arg::FlagSpec>(args[match->arg_index]);
+              auto& flag = std::get<arg::FlagSpec>(args[match->arg_index]);
               flag_counts[match->arg_index]++;
               if (flag.repeated) {
                 config[flag.dest] = flag_counts[match->arg_index];
@@ -259,7 +254,7 @@ namespace json_commander::parse {
             }
 
             if (match->kind == MatchKind::Option) {
-              auto &opt = std::get<arg::OptionSpec>(args[match->arg_index]);
+              auto& opt = std::get<arg::OptionSpec>(args[match->arg_index]);
               std::string raw_value;
               if (eq_value.has_value()) {
                 raw_value = *eq_value;
@@ -273,7 +268,7 @@ namespace json_commander::parse {
               nlohmann::json converted;
               try {
                 converted = opt.converter.parse(raw_value);
-              } catch (const conv::Error &e) {
+              } catch (const conv::Error& e) {
                 throw Error("option --" + name + ": " + e.what());
               }
               if (opt.repeated) {
@@ -289,8 +284,9 @@ namespace json_commander::parse {
             }
 
             if (match->kind == MatchKind::FlagGroup) {
-              auto &group = std::get<arg::FlagGroupSpec>(args[match->arg_index]);
-              auto &entry = group.entries[match->entry_index];
+              auto& group =
+                std::get<arg::FlagGroupSpec>(args[match->arg_index]);
+              auto& entry = group.entries[match->entry_index];
               flag_counts[match->arg_index]++;
               if (group.repeated) {
                 if (!config.contains(group.dest)) {
@@ -315,7 +311,7 @@ namespace json_commander::parse {
               }
 
               if (match->kind == MatchKind::Flag) {
-                auto &flag = std::get<arg::FlagSpec>(args[match->arg_index]);
+                auto& flag = std::get<arg::FlagSpec>(args[match->arg_index]);
                 flag_counts[match->arg_index]++;
                 if (flag.repeated) {
                   config[flag.dest] = flag_counts[match->arg_index];
@@ -326,11 +322,12 @@ namespace json_commander::parse {
               }
 
               if (match->kind == MatchKind::Option) {
-                auto &opt = std::get<arg::OptionSpec>(args[match->arg_index]);
+                auto& opt = std::get<arg::OptionSpec>(args[match->arg_index]);
                 // If not the last character in the group, error
                 if (c != token.size() - 1) {
-                  throw Error("option " + short_name +
-                              " requires a value and must be last in a short group");
+                  throw Error(
+                    "option " + short_name +
+                    " requires a value and must be last in a short group");
                 }
                 ++i;
                 if (i >= tokens.size()) {
@@ -340,7 +337,7 @@ namespace json_commander::parse {
                 nlohmann::json converted;
                 try {
                   converted = opt.converter.parse(raw_value);
-                } catch (const conv::Error &e) {
+                } catch (const conv::Error& e) {
                   throw Error("option " + short_name + ": " + e.what());
                 }
                 if (opt.repeated) {
@@ -355,8 +352,9 @@ namespace json_commander::parse {
               }
 
               if (match->kind == MatchKind::FlagGroup) {
-                auto &group = std::get<arg::FlagGroupSpec>(args[match->arg_index]);
-                auto &entry = group.entries[match->entry_index];
+                auto& group =
+                  std::get<arg::FlagGroupSpec>(args[match->arg_index]);
+                auto& entry = group.entries[match->entry_index];
                 flag_counts[match->arg_index]++;
                 if (group.repeated) {
                   if (!config.contains(group.dest)) {
@@ -378,24 +376,24 @@ namespace json_commander::parse {
         // Check for subcommand match (only when options not terminated)
         if (!options_terminated) {
           bool found_command = false;
-          for (const auto &cmd : commands) {
+          for (const auto& cmd : commands) {
             if (cmd.name == tokens[i]) {
               command_path.push_back(cmd.name);
-              auto sub_result =
-                  parse_level(cmd.args, cmd.commands, tokens, i + 1, false, std::nullopt);
+              auto sub_result = parse_level(
+                cmd.args, cmd.commands, tokens, i + 1, false, std::nullopt);
 
               // Propagate help/version from sub-level
-              if (auto *help = std::get_if<HelpRequest>(&sub_result)) {
+              if (auto* help = std::get_if<HelpRequest>(&sub_result)) {
                 // Prepend our accumulated command_path
                 std::vector<std::string> full_path = command_path;
-                for (auto &p : help->command_path) {
+                for (auto& p : help->command_path) {
                   full_path.push_back(std::move(p));
                 }
                 return HelpRequest{std::move(full_path)};
               }
-              if (auto *manpage = std::get_if<ManpageRequest>(&sub_result)) {
+              if (auto* manpage = std::get_if<ManpageRequest>(&sub_result)) {
                 std::vector<std::string> full_path = command_path;
-                for (auto &p : manpage->command_path) {
+                for (auto& p : manpage->command_path) {
                   full_path.push_back(std::move(p));
                 }
                 return ManpageRequest{std::move(full_path)};
@@ -404,11 +402,11 @@ namespace json_commander::parse {
                 return VersionRequest{};
               }
 
-              auto &sub_ok = std::get<LevelOk>(sub_result);
-              for (auto &[key, val] : sub_ok.config.items()) {
+              auto& sub_ok = std::get<LevelOk>(sub_result);
+              for (auto& [key, val] : sub_ok.config.items()) {
                 config[key] = val;
               }
-              for (auto &p : sub_ok.command_path) {
+              for (auto& p : sub_ok.command_path) {
                 command_path.push_back(std::move(p));
               }
               i = sub_ok.next_pos;
@@ -416,9 +414,7 @@ namespace json_commander::parse {
               break;
             }
           }
-          if (found_command) {
-            continue;
-          }
+          if (found_command) { continue; }
         }
 
         // Treat as positional
@@ -426,11 +422,11 @@ namespace json_commander::parse {
           throw Error("unexpected positional argument: " + tokens[i]);
         }
         auto pos_idx = positional_indices[pos_cursor];
-        auto &pos = std::get<arg::PositionalSpec>(args[pos_idx]);
+        auto& pos = std::get<arg::PositionalSpec>(args[pos_idx]);
         nlohmann::json converted;
         try {
           converted = pos.converter.parse(tokens[i]);
-        } catch (const conv::Error &e) {
+        } catch (const conv::Error& e) {
           throw Error("positional " + pos.name + ": " + e.what());
         }
         if (pos.repeated) {
@@ -453,54 +449,52 @@ namespace json_commander::parse {
     // -----------------------------------------------------------------------
 
     inline void
-    apply_env(nlohmann::json &config, const std::vector<arg::ArgSpec> &args, const EnvLookup &env) {
-      for (const auto &a : args) {
+    apply_env(
+      nlohmann::json& config,
+      const std::vector<arg::ArgSpec>& args,
+      const EnvLookup& env) {
+      for (const auto& a : args) {
         std::visit(
-            [&](const auto &spec) {
-              using T = std::decay_t<decltype(spec)>;
-              if constexpr (std::is_same_v<T, arg::FlagSpec>) {
-                if (config.contains(spec.dest) && config[spec.dest] != false) {
-                  return; // already set by CLI
-                }
-                if (!spec.env.has_value()) {
-                  return;
-                }
-                auto val = env(spec.env->var);
-                if (!val.has_value()) {
-                  return;
-                }
-                auto lower = *val;
-                std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char ch) {
-                  return std::tolower(ch);
-                });
-                if (lower == "true" || lower == "1") {
-                  config[spec.dest] = true;
-                } else if (lower == "false" || lower == "0") {
-                  config[spec.dest] = false;
-                } else {
-                  throw Error("env " + spec.env->var + ": expected boolean value, got '" + *val +
-                              "'");
-                }
-              } else if constexpr (std::is_same_v<T, arg::OptionSpec>) {
-                if (config.contains(spec.dest)) {
-                  return; // already set by CLI
-                }
-                if (!spec.env.has_value()) {
-                  return;
-                }
-                auto val = env(spec.env->var);
-                if (!val.has_value()) {
-                  return;
-                }
-                try {
-                  config[spec.dest] = spec.converter.parse(*val);
-                } catch (const conv::Error &e) {
-                  throw Error("env " + spec.env->var + ": " + e.what());
-                }
+          [&](const auto& spec) {
+            using T = std::decay_t<decltype(spec)>;
+            if constexpr (std::is_same_v<T, arg::FlagSpec>) {
+              if (config.contains(spec.dest) && config[spec.dest] != false) {
+                return; // already set by CLI
               }
-              // FlagGroupSpec and PositionalSpec have no env
-            },
-            a);
+              if (!spec.env.has_value()) { return; }
+              auto val = env(spec.env->var);
+              if (!val.has_value()) { return; }
+              auto lower = *val;
+              std::transform(
+                lower.begin(),
+                lower.end(),
+                lower.begin(),
+                [](unsigned char ch) { return std::tolower(ch); });
+              if (lower == "true" || lower == "1") {
+                config[spec.dest] = true;
+              } else if (lower == "false" || lower == "0") {
+                config[spec.dest] = false;
+              } else {
+                throw Error(
+                  "env " + spec.env->var + ": expected boolean value, got '" +
+                  *val + "'");
+              }
+            } else if constexpr (std::is_same_v<T, arg::OptionSpec>) {
+              if (config.contains(spec.dest)) {
+                return; // already set by CLI
+              }
+              if (!spec.env.has_value()) { return; }
+              auto val = env(spec.env->var);
+              if (!val.has_value()) { return; }
+              try {
+                config[spec.dest] = spec.converter.parse(*val);
+              } catch (const conv::Error& e) {
+                throw Error("env " + spec.env->var + ": " + e.what());
+              }
+            }
+            // FlagGroupSpec and PositionalSpec have no env
+          },
+          a);
       }
     }
 
@@ -509,30 +503,31 @@ namespace json_commander::parse {
     // -----------------------------------------------------------------------
 
     inline void
-    apply_defaults(nlohmann::json &config, const std::vector<arg::ArgSpec> &args) {
-      for (const auto &a : args) {
+    apply_defaults(
+      nlohmann::json& config, const std::vector<arg::ArgSpec>& args) {
+      for (const auto& a : args) {
         std::visit(
-            [&](const auto &spec) {
-              using T = std::decay_t<decltype(spec)>;
-              if constexpr (std::is_same_v<T, arg::FlagSpec>) {
-                if (!config.contains(spec.dest)) {
-                  config[spec.dest] = false;
-                }
-              } else if constexpr (std::is_same_v<T, arg::OptionSpec>) {
-                if (!config.contains(spec.dest) && spec.default_value.has_value()) {
-                  config[spec.dest] = *spec.default_value;
-                }
-              } else if constexpr (std::is_same_v<T, arg::PositionalSpec>) {
-                if (!config.contains(spec.dest) && spec.default_value.has_value()) {
-                  config[spec.dest] = *spec.default_value;
-                }
-              } else if constexpr (std::is_same_v<T, arg::FlagGroupSpec>) {
-                if (!config.contains(spec.dest)) {
-                  config[spec.dest] = spec.default_value;
-                }
+          [&](const auto& spec) {
+            using T = std::decay_t<decltype(spec)>;
+            if constexpr (std::is_same_v<T, arg::FlagSpec>) {
+              if (!config.contains(spec.dest)) { config[spec.dest] = false; }
+            } else if constexpr (std::is_same_v<T, arg::OptionSpec>) {
+              if (
+                !config.contains(spec.dest) && spec.default_value.has_value()) {
+                config[spec.dest] = *spec.default_value;
               }
-            },
-            a);
+            } else if constexpr (std::is_same_v<T, arg::PositionalSpec>) {
+              if (
+                !config.contains(spec.dest) && spec.default_value.has_value()) {
+                config[spec.dest] = *spec.default_value;
+              }
+            } else if constexpr (std::is_same_v<T, arg::FlagGroupSpec>) {
+              if (!config.contains(spec.dest)) {
+                config[spec.dest] = spec.default_value;
+              }
+            }
+          },
+          a);
       }
     }
 
@@ -541,34 +536,31 @@ namespace json_commander::parse {
     // -----------------------------------------------------------------------
 
     inline void
-    run_validators(const nlohmann::json &config, const std::vector<arg::ArgSpec> &args) {
-      for (const auto &a : args) {
+    run_validators(
+      const nlohmann::json& config, const std::vector<arg::ArgSpec>& args) {
+      for (const auto& a : args) {
         std::visit(
-            [&](const auto &spec) {
-              using T = std::decay_t<decltype(spec)>;
-              if constexpr (std::is_same_v<T, arg::OptionSpec>) {
-                std::optional<nlohmann::json> val;
-                if (config.contains(spec.dest)) {
-                  val = config[spec.dest];
-                }
-                try {
-                  spec.validator.check(spec.dest, val);
-                } catch (const validate::Error &e) {
-                  throw Error(std::string(e.what()));
-                }
-              } else if constexpr (std::is_same_v<T, arg::PositionalSpec>) {
-                std::optional<nlohmann::json> val;
-                if (config.contains(spec.dest)) {
-                  val = config[spec.dest];
-                }
-                try {
-                  spec.validator.check(spec.dest, val);
-                } catch (const validate::Error &e) {
-                  throw Error(std::string(e.what()));
-                }
+          [&](const auto& spec) {
+            using T = std::decay_t<decltype(spec)>;
+            if constexpr (std::is_same_v<T, arg::OptionSpec>) {
+              std::optional<nlohmann::json> val;
+              if (config.contains(spec.dest)) { val = config[spec.dest]; }
+              try {
+                spec.validator.check(spec.dest, val);
+              } catch (const validate::Error& e) {
+                throw Error(std::string(e.what()));
               }
-            },
-            a);
+            } else if constexpr (std::is_same_v<T, arg::PositionalSpec>) {
+              std::optional<nlohmann::json> val;
+              if (config.contains(spec.dest)) { val = config[spec.dest]; }
+              try {
+                spec.validator.check(spec.dest, val);
+              } catch (const validate::Error& e) {
+                throw Error(std::string(e.what()));
+              }
+            }
+          },
+          a);
       }
     }
 
@@ -577,20 +569,27 @@ namespace json_commander::parse {
     // -----------------------------------------------------------------------
 
     inline void
-    post_process(nlohmann::json &config,
-                 const std::vector<arg::ArgSpec> &args,
-                 const std::vector<cmd::CommandSpec> &commands,
-                 const std::vector<std::string> &command_path,
-                 std::size_t path_index,
-                 const EnvLookup &env) {
+    post_process(
+      nlohmann::json& config,
+      const std::vector<arg::ArgSpec>& args,
+      const std::vector<cmd::CommandSpec>& commands,
+      const std::vector<std::string>& command_path,
+      std::size_t path_index,
+      const EnvLookup& env) {
       apply_env(config, args, env);
       apply_defaults(config, args);
       run_validators(config, args);
 
       if (path_index < command_path.size()) {
-        for (const auto &cmd : commands) {
+        for (const auto& cmd : commands) {
           if (cmd.name == command_path[path_index]) {
-            post_process(config, cmd.args, cmd.commands, command_path, path_index + 1, env);
+            post_process(
+              config,
+              cmd.args,
+              cmd.commands,
+              command_path,
+              path_index + 1,
+              env);
             break;
           }
         }
@@ -604,24 +603,26 @@ namespace json_commander::parse {
   // -------------------------------------------------------------------------
 
   inline ParseResult
-  parse(const cmd::RootSpec &root,
-        const std::vector<std::string> &args,
-        EnvLookup env = default_env_lookup()) {
+  parse(
+    const cmd::RootSpec& root,
+    const std::vector<std::string>& args,
+    EnvLookup env = default_env_lookup()) {
+    auto level_result = detail::parse_level(
+      root.args, root.commands, args, 0, true, root.version);
 
-    auto level_result = detail::parse_level(root.args, root.commands, args, 0, true, root.version);
-
-    if (auto *help = std::get_if<HelpRequest>(&level_result)) {
+    if (auto* help = std::get_if<HelpRequest>(&level_result)) {
       return std::move(*help);
     }
-    if (auto *manpage = std::get_if<ManpageRequest>(&level_result)) {
+    if (auto* manpage = std::get_if<ManpageRequest>(&level_result)) {
       return std::move(*manpage);
     }
     if (std::holds_alternative<VersionRequest>(level_result)) {
       return VersionRequest{};
     }
 
-    auto &ok = std::get<detail::LevelOk>(level_result);
-    detail::post_process(ok.config, root.args, root.commands, ok.command_path, 0, env);
+    auto& ok = std::get<detail::LevelOk>(level_result);
+    detail::post_process(
+      ok.config, root.args, root.commands, ok.command_path, 0, env);
 
     return ParseOk{std::move(ok.config), std::move(ok.command_path)};
   }

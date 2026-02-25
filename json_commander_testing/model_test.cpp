@@ -14,19 +14,21 @@ using namespace json_commander::model;
 
 namespace {
 
-template <typename T>
-void round_trip(const T &value) {
-  json j = value;
-  auto recovered = j.get<T>();
-  REQUIRE(recovered == value);
-}
+  template <typename T>
+  void
+  round_trip(const T& value) {
+    json j = value;
+    auto recovered = j.get<T>();
+    REQUIRE(recovered == value);
+  }
 
-template <typename T>
-void round_trip_json(const json &j) {
-  auto value = j.get<T>();
-  json j2 = value;
-  REQUIRE(j2 == j);
-}
+  template <typename T>
+  void
+  round_trip_json(const json& j) {
+    auto value = j.get<T>();
+    json j2 = value;
+    REQUIRE(j2 == j);
+  }
 
 } // namespace
 
@@ -65,9 +67,7 @@ TEST_CASE("DocString round-trip", "[model][leaf]") {
 }
 
 TEST_CASE("ListType round-trip", "[model][leaf]") {
-  SECTION("with separator") {
-    round_trip(ListType{ScalarType::String, ","});
-  }
+  SECTION("with separator") { round_trip(ListType{ScalarType::String, ","}); }
 
   SECTION("without separator") {
     round_trip(ListType{ScalarType::Int, std::nullopt});
@@ -101,16 +101,19 @@ TEST_CASE("PairType round-trip", "[model][leaf]") {
 
 TEST_CASE("TripleType round-trip", "[model][leaf]") {
   SECTION("with separator") {
-    round_trip(TripleType{ScalarType::Int, ScalarType::Int, ScalarType::Int, ","});
+    round_trip(
+      TripleType{ScalarType::Int, ScalarType::Int, ScalarType::Int, ","});
   }
 
   SECTION("without separator") {
     round_trip(
-        TripleType{ScalarType::String, ScalarType::Float, ScalarType::Bool, std::nullopt});
+      TripleType{
+        ScalarType::String, ScalarType::Float, ScalarType::Bool, std::nullopt});
   }
 
   SECTION("from JSON") {
-    json j = {{"triple", {{"first", "int"}, {"second", "int"}, {"third", "int"}}}};
+    json j = {
+      {"triple", {{"first", "int"}, {"second", "int"}, {"third", "int"}}}};
     round_trip_json<TripleType>(j);
   }
 }
@@ -132,13 +135,12 @@ TEST_CASE("TypeSpec round-trip", "[model][leaf]") {
   }
 
   SECTION("triple") {
-    TypeSpec ts = TripleType{ScalarType::Int, ScalarType::Int, ScalarType::Int, ","};
+    TypeSpec ts =
+      TripleType{ScalarType::Int, ScalarType::Int, ScalarType::Int, ","};
     round_trip(ts);
   }
 
-  SECTION("from scalar JSON") {
-    round_trip_json<TypeSpec>(json("string"));
-  }
+  SECTION("from scalar JSON") { round_trip_json<TypeSpec>(json("string")); }
 
   SECTION("from list JSON") {
     json j = {{"list", {{"element", "string"}, {"separator", ","}}}};
@@ -151,7 +153,8 @@ TEST_CASE("TypeSpec round-trip", "[model][leaf]") {
   }
 
   SECTION("from triple JSON") {
-    json j = {{"triple", {{"first", "int"}, {"second", "int"}, {"third", "int"}}}};
+    json j = {
+      {"triple", {{"first", "int"}, {"second", "int"}, {"third", "int"}}}};
     round_trip_json<TypeSpec>(j);
   }
 }
@@ -191,9 +194,7 @@ TEST_CASE("EnvInfo round-trip", "[model][env]") {
     round_trip(EnvInfo{"MYAPP_CONFIG", DocString{"Path to config"}});
   }
 
-  SECTION("without doc") {
-    round_trip(EnvInfo{"MYAPP_DEBUG", std::nullopt});
-  }
+  SECTION("without doc") { round_trip(EnvInfo{"MYAPP_DEBUG", std::nullopt}); }
 
   SECTION("from JSON with doc") {
     json j = {{"var", "MYAPP_CONFIG"}, {"doc", {"Path to config"}}};
@@ -251,19 +252,21 @@ TEST_CASE("Flag round-trip", "[model][args]") {
   }
 
   SECTION("from minimal JSON") {
-    json j = {{"kind", "flag"}, {"names", {"verbose"}}, {"doc", {"Be verbose"}}};
+    json j = {
+      {"kind", "flag"}, {"names", {"verbose"}}, {"doc", {"Be verbose"}}};
     round_trip_json<Flag>(j);
   }
 
   SECTION("from full JSON") {
-    json j = {{"kind", "flag"},
-              {"names", {"verbose", "v"}},
-              {"doc", {"Be verbose"}},
-              {"dest", "verbose"},
-              {"env", "MYAPP_VERBOSE"},
-              {"repeated", true},
-              {"deprecated", "Use --log-level instead"},
-              {"docs", "COMMON OPTIONS"}};
+    json j = {
+      {"kind", "flag"},
+      {"names", {"verbose", "v"}},
+      {"doc", {"Be verbose"}},
+      {"dest", "verbose"},
+      {"env", "MYAPP_VERBOSE"},
+      {"repeated", true},
+      {"deprecated", "Use --log-level instead"},
+      {"docs", "COMMON OPTIONS"}};
     round_trip_json<Flag>(j);
   }
 }
@@ -278,7 +281,8 @@ TEST_CASE("FlagGroupEntry round-trip", "[model][args]") {
   }
 
   SECTION("from JSON") {
-    json j = {{"names", {"quiet", "q"}}, {"doc", {"Quiet mode"}}, {"value", "quiet"}};
+    json j = {
+      {"names", {"quiet", "q"}}, {"doc", {"Quiet mode"}}, {"value", "quiet"}};
     round_trip_json<FlagGroupEntry>(j);
   }
 }
@@ -302,25 +306,27 @@ TEST_CASE("FlagGroup round-trip", "[model][args]") {
   }
 
   SECTION("from JSON") {
-    json j = {{"kind", "flag_group"},
-              {"dest", "log_level"},
-              {"doc", {"Logging level"}},
-              {"default", "normal"},
-              {"flags",
-               {{{"names", {"quiet"}}, {"doc", {"Quiet"}}, {"value", "quiet"}},
-                {{"names", {"verbose"}}, {"doc", {"Verbose"}}, {"value", "verbose"}}}}};
+    json j = {
+      {"kind", "flag_group"},
+      {"dest", "log_level"},
+      {"doc", {"Logging level"}},
+      {"default", "normal"},
+      {"flags",
+       {{{"names", {"quiet"}}, {"doc", {"Quiet"}}, {"value", "quiet"}},
+        {{"names", {"verbose"}}, {"doc", {"Verbose"}}, {"value", "verbose"}}}}};
     round_trip_json<FlagGroup>(j);
   }
 
   SECTION("from JSON with repeated") {
-    json j = {{"kind", "flag_group"},
-              {"dest", "log_level"},
-              {"doc", {"Logging level"}},
-              {"default", "normal"},
-              {"repeated", true},
-              {"flags",
-               {{{"names", {"quiet"}}, {"doc", {"Quiet"}}, {"value", "quiet"}},
-                {{"names", {"verbose"}}, {"doc", {"Verbose"}}, {"value", "verbose"}}}}};
+    json j = {
+      {"kind", "flag_group"},
+      {"dest", "log_level"},
+      {"doc", {"Logging level"}},
+      {"default", "normal"},
+      {"repeated", true},
+      {"flags",
+       {{{"names", {"quiet"}}, {"doc", {"Quiet"}}, {"value", "quiet"}},
+        {{"names", {"verbose"}}, {"doc", {"Verbose"}}, {"value", "verbose"}}}}};
     round_trip_json<FlagGroup>(j);
   }
 }
@@ -368,43 +374,47 @@ TEST_CASE("Option round-trip", "[model][args]") {
   }
 
   SECTION("from minimal JSON") {
-    json j = {{"kind", "option"},
-              {"names", {"output", "o"}},
-              {"doc", {"Output file"}},
-              {"type", "string"}};
+    json j = {
+      {"kind", "option"},
+      {"names", {"output", "o"}},
+      {"doc", {"Output file"}},
+      {"type", "string"}};
     round_trip_json<Option>(j);
   }
 
   SECTION("from full JSON") {
-    json j = {{"kind", "option"},
-              {"names", {"output", "o"}},
-              {"doc", {"Output file"}},
-              {"docv", "FILE"},
-              {"type", "file"},
-              {"default", "-"},
-              {"required", false},
-              {"repeated", false},
-              {"must_exist", true},
-              {"dest", "output"},
-              {"env", "MYAPP_OUTPUT"},
-              {"docs", "OPTIONS"}};
+    json j = {
+      {"kind", "option"},
+      {"names", {"output", "o"}},
+      {"doc", {"Output file"}},
+      {"docv", "FILE"},
+      {"type", "file"},
+      {"default", "-"},
+      {"required", false},
+      {"repeated", false},
+      {"must_exist", true},
+      {"dest", "output"},
+      {"env", "MYAPP_OUTPUT"},
+      {"docs", "OPTIONS"}};
     round_trip_json<Option>(j);
   }
 
   SECTION("from JSON with choices") {
-    json j = {{"kind", "option"},
-              {"names", {"format"}},
-              {"doc", {"Output format"}},
-              {"type", "enum"},
-              {"choices", {"json", "yaml", "toml"}}};
+    json j = {
+      {"kind", "option"},
+      {"names", {"format"}},
+      {"doc", {"Output format"}},
+      {"type", "enum"},
+      {"choices", {"json", "yaml", "toml"}}};
     round_trip_json<Option>(j);
   }
 
   SECTION("from JSON with list type") {
-    json j = {{"kind", "option"},
-              {"names", {"includes"}},
-              {"doc", {"Include paths"}},
-              {"type", {{"list", {{"element", "string"}, {"separator", ","}}}}}};
+    json j = {
+      {"kind", "option"},
+      {"names", {"includes"}},
+      {"doc", {"Include paths"}},
+      {"type", {{"list", {{"element", "string"}, {"separator", ","}}}}}};
     round_trip_json<Option>(j);
   }
 }
@@ -434,21 +444,25 @@ TEST_CASE("Positional round-trip", "[model][args]") {
 
   SECTION("from minimal JSON") {
     json j = {
-        {"kind", "positional"}, {"name", "input"}, {"doc", {"Input file"}}, {"type", "string"}};
+      {"kind", "positional"},
+      {"name", "input"},
+      {"doc", {"Input file"}},
+      {"type", "string"}};
     round_trip_json<Positional>(j);
   }
 
   SECTION("from full JSON") {
-    json j = {{"kind", "positional"},
-              {"name", "input"},
-              {"doc", {"Input files"}},
-              {"docv", "FILE"},
-              {"type", "file"},
-              {"default", nullptr},
-              {"required", true},
-              {"repeated", true},
-              {"must_exist", true},
-              {"docs", "ARGUMENTS"}};
+    json j = {
+      {"kind", "positional"},
+      {"name", "input"},
+      {"doc", {"Input files"}},
+      {"docv", "FILE"},
+      {"type", "file"},
+      {"default", nullptr},
+      {"required", true},
+      {"repeated", true},
+      {"must_exist", true},
+      {"docs", "ARGUMENTS"}};
     round_trip_json<Positional>(j);
   }
 }
@@ -495,30 +509,37 @@ TEST_CASE("Argument variant round-trip", "[model][args]") {
   }
 
   SECTION("from flag JSON") {
-    json j = {{"kind", "flag"}, {"names", {"verbose"}}, {"doc", {"Be verbose"}}};
+    json j = {
+      {"kind", "flag"}, {"names", {"verbose"}}, {"doc", {"Be verbose"}}};
     round_trip_json<Argument>(j);
   }
 
   SECTION("from option JSON") {
-    json j = {{"kind", "option"},
-              {"names", {"output"}},
-              {"doc", {"Output"}},
-              {"type", "string"}};
+    json j = {
+      {"kind", "option"},
+      {"names", {"output"}},
+      {"doc", {"Output"}},
+      {"type", "string"}};
     round_trip_json<Argument>(j);
   }
 
   SECTION("from positional JSON") {
     json j = {
-        {"kind", "positional"}, {"name", "input"}, {"doc", {"Input"}}, {"type", "string"}};
+      {"kind", "positional"},
+      {"name", "input"},
+      {"doc", {"Input"}},
+      {"type", "string"}};
     round_trip_json<Argument>(j);
   }
 
   SECTION("from flag_group JSON") {
-    json j = {{"kind", "flag_group"},
-              {"dest", "level"},
-              {"doc", {"Level"}},
-              {"default", "normal"},
-              {"flags", {{{"names", {"quiet"}}, {"doc", {"Quiet"}}, {"value", "quiet"}}}}};
+    json j = {
+      {"kind", "flag_group"},
+      {"dest", "level"},
+      {"doc", {"Level"}},
+      {"default", "normal"},
+      {"flags",
+       {{{"names", {"quiet"}}, {"doc", {"Quiet"}}, {"value", "quiet"}}}}};
     round_trip_json<Argument>(j);
   }
 }
@@ -603,9 +624,10 @@ TEST_CASE("ManSection round-trip", "[model][man]") {
   s.blocks = {ParagraphBlock{{"A useful tool."}}, PreBlock{{"$ myapp --help"}}};
   round_trip(s);
 
-  json j = {{"name", "DESCRIPTION"},
-            {"blocks",
-             {{{"paragraph", {"A useful tool."}}}, {{"pre", {"$ myapp --help"}}}}}};
+  json j = {
+    {"name", "DESCRIPTION"},
+    {"blocks",
+     {{{"paragraph", {"A useful tool."}}}, {{"pre", {"$ myapp --help"}}}}}};
   round_trip_json<ManSection>(j);
 }
 
@@ -628,7 +650,7 @@ TEST_CASE("Man round-trip", "[model][man]") {
     Man m;
     m.section = 1;
     m.sections = std::vector<ManSection>{{
-        ManSection{"DESCRIPTION", {ParagraphBlock{{"A tool."}}}},
+      ManSection{"DESCRIPTION", {ParagraphBlock{{"A tool."}}}},
     }};
     m.xrefs = std::vector<ManXref>{{"git", 1}};
     round_trip(m);
@@ -640,11 +662,11 @@ TEST_CASE("Man round-trip", "[model][man]") {
   }
 
   SECTION("from full JSON") {
-    json j = {{"section", 1},
-              {"sections",
-               {{{"name", "DESCRIPTION"},
-                 {"blocks", {{{"paragraph", {"A tool."}}}}}}}}  ,
-              {"xrefs", {{{"name", "git"}, {"section", 1}}}}};
+    json j = {
+      {"section", 1},
+      {"sections",
+       {{{"name", "DESCRIPTION"}, {"blocks", {{{"paragraph", {"A tool."}}}}}}}},
+      {"xrefs", {{{"name", "git"}, {"section", 1}}}}};
     round_trip_json<Man>(j);
   }
 }
@@ -655,7 +677,11 @@ TEST_CASE("Man round-trip", "[model][man]") {
 
 TEST_CASE("ConfigPaths round-trip", "[model][config]") {
   SECTION("all paths") {
-    round_trip(ConfigPaths{"/etc/myapp/config.json", "~/.config/myapp/config.json", ".myapp.json"});
+    round_trip(
+      ConfigPaths{
+        "/etc/myapp/config.json",
+        "~/.config/myapp/config.json",
+        ".myapp.json"});
   }
 
   SECTION("partial paths") {
@@ -663,9 +689,10 @@ TEST_CASE("ConfigPaths round-trip", "[model][config]") {
   }
 
   SECTION("from full JSON") {
-    json j = {{"system", "/etc/myapp/config.json"},
-              {"user", "~/.config/myapp/config.json"},
-              {"local", ".myapp.json"}};
+    json j = {
+      {"system", "/etc/myapp/config.json"},
+      {"user", "~/.config/myapp/config.json"},
+      {"local", ".myapp.json"}};
     round_trip_json<ConfigPaths>(j);
   }
 
@@ -685,7 +712,8 @@ TEST_CASE("Config round-trip", "[model][config]") {
   SECTION("with paths") {
     Config c;
     c.format = "json";
-    c.paths = ConfigPaths{"/etc/myapp/config.json", "~/.config/myapp/config.json", ".myapp.json"};
+    c.paths = ConfigPaths{
+      "/etc/myapp/config.json", "~/.config/myapp/config.json", ".myapp.json"};
     round_trip(c);
   }
 
@@ -695,11 +723,12 @@ TEST_CASE("Config round-trip", "[model][config]") {
   }
 
   SECTION("from full JSON") {
-    json j = {{"format", "json"},
-              {"paths",
-               {{"system", "/etc/myapp/config.json"},
-                {"user", "~/.config/myapp/config.json"},
-                {"local", ".myapp.json"}}}};
+    json j = {
+      {"format", "json"},
+      {"paths",
+       {{"system", "/etc/myapp/config.json"},
+        {"user", "~/.config/myapp/config.json"},
+        {"local", ".myapp.json"}}}};
     round_trip_json<Config>(j);
   }
 }
@@ -745,11 +774,12 @@ TEST_CASE("Command round-trip", "[model][command]") {
   }
 
   SECTION("from JSON with subcommands") {
-    json j = {{"name", "remote"},
-              {"doc", {"Manage remotes"}},
-              {"commands",
-               {{{"name", "add"}, {"doc", {"Add a remote"}}},
-                {{"name", "remove"}, {"doc", {"Remove a remote"}}}}}};
+    json j = {
+      {"name", "remote"},
+      {"doc", {"Manage remotes"}},
+      {"commands",
+       {{{"name", "add"}, {"doc", {"Add a remote"}}},
+        {{"name", "remove"}, {"doc", {"Remove a remote"}}}}}};
     round_trip_json<Command>(j);
   }
 }
@@ -789,7 +819,8 @@ TEST_CASE("Root round-trip", "[model][command]") {
 
     Config c;
     c.format = "json";
-    c.paths = ConfigPaths{"/etc/myapp/config.json", "~/.config/myapp/config.json", ".myapp.json"};
+    c.paths = ConfigPaths{
+      "/etc/myapp/config.json", "~/.config/myapp/config.json", ".myapp.json"};
     r.config = c;
 
     Flag f;
@@ -806,7 +837,8 @@ TEST_CASE("Root round-trip", "[model][command]") {
     m.section = 1;
     r.man = m;
 
-    r.envs = std::vector<EnvInfo>{{"MYAPP_CONFIG", DocString{"Path to config"}}};
+    r.envs =
+      std::vector<EnvInfo>{{"MYAPP_CONFIG", DocString{"Path to config"}}};
     r.exits = std::vector<ExitInfo>{{0, std::nullopt, {"Success"}}};
 
     round_trip(r);
@@ -818,10 +850,11 @@ TEST_CASE("Root round-trip", "[model][command]") {
   }
 
   SECTION("from JSON with version and config") {
-    json j = {{"name", "myapp"},
-              {"doc", {"A test application"}},
-              {"version", "1.2.3"},
-              {"config", {{"format", "json"}}}};
+    json j = {
+      {"name", "myapp"},
+      {"doc", {"A test application"}},
+      {"version", "1.2.3"},
+      {"config", {{"format", "json"}}}};
     round_trip_json<Root>(j);
   }
 }
@@ -830,126 +863,126 @@ TEST_CASE("Root round-trip", "[model][command]") {
 // Phase 6: Integration — realistic schema round-trip
 // ===========================================================================
 
-TEST_CASE("Realistic CLI schema round-trips through data model", "[model][integration]") {
+TEST_CASE(
+  "Realistic CLI schema round-trips through data model",
+  "[model][integration]") {
   json set_cmd = {
-      {"name", "set"},
-      {"doc", {"Set a configuration value"}},
-      {"args",
-       {{{"kind", "positional"},
-         {"name", "key"},
-         {"doc", {"Configuration key"}},
-         {"type", "string"},
-         {"required", true}},
-        {{"kind", "positional"},
-         {"name", "value"},
-         {"doc", {"Configuration value"}},
-         {"type", "string"},
-         {"required", true}}}}};
+    {"name", "set"},
+    {"doc", {"Set a configuration value"}},
+    {"args",
+     {{{"kind", "positional"},
+       {"name", "key"},
+       {"doc", {"Configuration key"}},
+       {"type", "string"},
+       {"required", true}},
+      {{"kind", "positional"},
+       {"name", "value"},
+       {"doc", {"Configuration value"}},
+       {"type", "string"},
+       {"required", true}}}}};
 
   json config_cmd = {
-      {"name", "config"},
-      {"doc", {"Manage configuration"}},
-      {"commands",
-       {{{"name", "show"}, {"doc", {"Show current configuration"}}}, set_cmd}}};
+    {"name", "config"},
+    {"doc", {"Manage configuration"}},
+    {"commands",
+     {{{"name", "show"}, {"doc", {"Show current configuration"}}}, set_cmd}}};
 
   json validate_cmd = {
-      {"name", "validate"},
-      {"doc", {"Validate file format"}},
-      {"args",
-       {{{"kind", "flag"},
-         {"names", {"strict", "s"}},
-         {"doc", {"Enable strict mode"}}},
-        {{"kind", "positional"},
-         {"name", "file"},
-         {"doc", {"File to validate"}},
-         {"type", "file"},
-         {"required", true}}}},
-      {"envs", {{{"var", "MYAPP_STRICT"}, {"doc", {"Default strict mode"}}}}}};
+    {"name", "validate"},
+    {"doc", {"Validate file format"}},
+    {"args",
+     {{{"kind", "flag"},
+       {"names", {"strict", "s"}},
+       {"doc", {"Enable strict mode"}}},
+      {{"kind", "positional"},
+       {"name", "file"},
+       {"doc", {"File to validate"}},
+       {"type", "file"},
+       {"required", true}}}},
+    {"envs", {{{"var", "MYAPP_STRICT"}, {"doc", {"Default strict mode"}}}}}};
 
   json convert_cmd = {
-      {"name", "convert"},
-      {"doc", {"Convert files between formats"}},
-      {"args",
-       {{{"kind", "option"},
-         {"names", {"target-format"}},
-         {"doc", {"Target format"}},
-         {"type", "enum"},
-         {"choices", {"json", "yaml", "csv"}}},
-        {{"kind", "positional"},
-         {"name", "input"},
-         {"doc", {"Input files"}},
-         {"docv", "FILE"},
-         {"type", "file"},
-         {"required", true},
-         {"repeated", true},
-         {"must_exist", true}}}}};
+    {"name", "convert"},
+    {"doc", {"Convert files between formats"}},
+    {"args",
+     {{{"kind", "option"},
+       {"names", {"target-format"}},
+       {"doc", {"Target format"}},
+       {"type", "enum"},
+       {"choices", {"json", "yaml", "csv"}}},
+      {{"kind", "positional"},
+       {"name", "input"},
+       {"doc", {"Input files"}},
+       {"docv", "FILE"},
+       {"type", "file"},
+       {"required", true},
+       {"repeated", true},
+       {"must_exist", true}}}}};
 
   json realistic = {
-      {"name", "myapp"},
-      {"version", "2.1.0"},
-      {"doc", {"A file processing tool"}},
-      {"config",
-       {{"format", "json"},
-        {"paths",
-         {{"system", "/etc/myapp/config.json"},
-          {"user", "~/.config/myapp/config.json"},
-          {"local", ".myapp.json"}}}}},
-      {"man",
-       {{"section", 1},
-        {"sections",
-         {{{"name", "DESCRIPTION"},
-           {"blocks",
-            {{{"paragraph",
-               {"myapp processes files according to rules.",
-                "It supports multiple input formats.",
-                "",
-                "Output can be written to a file or stdout."}}}}}},
-          {{"name", "EXAMPLES"},
-           {"blocks",
-            {{{"paragraph", {"Convert a file:"}}},
-             {{"pre", {"$ myapp --format json input.txt"}}}}}}}},
-        {"xrefs", {{{"name", "jq"}, {"section", 1}}}}}},
-      {"envs",
-       {{{"var", "MYAPP_CONFIG"}, {"doc", {"Path to configuration file"}}},
-        {{"var", "MYAPP_COLOR"}, {"doc", {"Enable colored output"}}}}},
-      {"exits",
-       {{{"code", 0}, {"doc", {"Success"}}},
-        {{"code", 1}, {"doc", {"General error"}}},
-        {{"code", 2}, {"max", 63}, {"doc", {"Application-specific error"}}}}},
-      {"args",
-       {{{"kind", "flag_group"},
-         {"dest", "verbosity"},
-         {"doc", {"Set verbosity level"}},
-         {"default", "normal"},
-         {"flags",
-          {{{"names", {"quiet", "q"}}, {"doc", {"Quiet mode"}}, {"value", "quiet"}},
-           {{"names", {"verbose", "v"}},
-            {"doc", {"Verbose mode"}},
-            {"value", "verbose"}},
-           {{"names", {"debug"}}, {"doc", {"Debug mode"}}, {"value", "debug"}}}}},
-        {{"kind", "option"},
-         {"names", {"format", "f"}},
-         {"doc", {"Output format"}},
-         {"type", "enum"},
-         {"choices", {"json", "yaml", "text"}},
-         {"default", "text"},
-         {"env", "MYAPP_FORMAT"},
-         {"docs", "OPTIONS"}},
-        {{"kind", "option"},
-         {"names", {"output", "o"}},
-         {"doc", {"Output file"}},
-         {"docv", "FILE"},
-         {"type", "file"},
-         {"default", "-"},
-         {"env", {{"var", "MYAPP_OUTPUT"}, {"doc", {"Default output path"}}}},
-         {"docs", "OPTIONS"}},
-        {{"kind", "option"},
-         {"names", {"tags"}},
-         {"doc", {"Comma-separated tags"}},
-         {"type", {{"list", {{"element", "string"}, {"separator", ","}}}}},
-         {"repeated", false},
-         {"docs", "OPTIONS"}}}},
-      {"commands", {convert_cmd, validate_cmd, config_cmd}}};
+    {"name", "myapp"},
+    {"version", "2.1.0"},
+    {"doc", {"A file processing tool"}},
+    {"config",
+     {{"format", "json"},
+      {"paths",
+       {{"system", "/etc/myapp/config.json"},
+        {"user", "~/.config/myapp/config.json"},
+        {"local", ".myapp.json"}}}}},
+    {"man",
+     {{"section", 1},
+      {"sections",
+       {{{"name", "DESCRIPTION"},
+         {"blocks",
+          {{{"paragraph", {"myapp processes files according to rules.", "It supports multiple input formats.", "", "Output can be written to a file or stdout."}}}}}},
+        {{"name", "EXAMPLES"},
+         {"blocks",
+          {{{"paragraph", {"Convert a file:"}}},
+           {{"pre", {"$ myapp --format json input.txt"}}}}}}}},
+      {"xrefs", {{{"name", "jq"}, {"section", 1}}}}}},
+    {"envs",
+     {{{"var", "MYAPP_CONFIG"}, {"doc", {"Path to configuration file"}}},
+      {{"var", "MYAPP_COLOR"}, {"doc", {"Enable colored output"}}}}},
+    {"exits",
+     {{{"code", 0}, {"doc", {"Success"}}},
+      {{"code", 1}, {"doc", {"General error"}}},
+      {{"code", 2}, {"max", 63}, {"doc", {"Application-specific error"}}}}},
+    {"args",
+     {{{"kind", "flag_group"},
+       {"dest", "verbosity"},
+       {"doc", {"Set verbosity level"}},
+       {"default", "normal"},
+       {"flags",
+        {{{"names", {"quiet", "q"}},
+          {"doc", {"Quiet mode"}},
+          {"value", "quiet"}},
+         {{"names", {"verbose", "v"}},
+          {"doc", {"Verbose mode"}},
+          {"value", "verbose"}},
+         {{"names", {"debug"}}, {"doc", {"Debug mode"}}, {"value", "debug"}}}}},
+      {{"kind", "option"},
+       {"names", {"format", "f"}},
+       {"doc", {"Output format"}},
+       {"type", "enum"},
+       {"choices", {"json", "yaml", "text"}},
+       {"default", "text"},
+       {"env", "MYAPP_FORMAT"},
+       {"docs", "OPTIONS"}},
+      {{"kind", "option"},
+       {"names", {"output", "o"}},
+       {"doc", {"Output file"}},
+       {"docv", "FILE"},
+       {"type", "file"},
+       {"default", "-"},
+       {"env", {{"var", "MYAPP_OUTPUT"}, {"doc", {"Default output path"}}}},
+       {"docs", "OPTIONS"}},
+      {{"kind", "option"},
+       {"names", {"tags"}},
+       {"doc", {"Comma-separated tags"}},
+       {"type", {{"list", {{"element", "string"}, {"separator", ","}}}}},
+       {"repeated", false},
+       {"docs", "OPTIONS"}}}},
+    {"commands", {convert_cmd, validate_cmd, config_cmd}}};
 
   Root root;
   from_json(realistic, root);

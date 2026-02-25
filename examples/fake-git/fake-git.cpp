@@ -43,17 +43,17 @@ make_cli() {
 // ---------------------------------------------------------------------------
 
 int
-run(const std::vector<std::string> &args) {
+run(const std::vector<std::string>& args) {
   auto cli = make_cli();
   auto spec = cmd::make(cli);
   auto result = parse::parse(spec, args);
 
-  if (auto *ok = std::get_if<parse::ParseOk>(&result)) {
+  if (auto* ok = std::get_if<parse::ParseOk>(&result)) {
     std::cout << ok->config.dump(2) << "\n";
     return 0;
   }
 
-  if (auto *help = std::get_if<parse::HelpRequest>(&result)) {
+  if (auto* help = std::get_if<parse::HelpRequest>(&result)) {
     if (FAKEGIT_ISATTY(FAKEGIT_STDOUT_FD)) {
       std::cout << manpage::to_ansi_text(cli, help->command_path);
     } else {
@@ -62,7 +62,7 @@ run(const std::vector<std::string> &args) {
     return 0;
   }
 
-  if (auto *man = std::get_if<parse::ManpageRequest>(&result)) {
+  if (auto* man = std::get_if<parse::ManpageRequest>(&result)) {
     std::cout << manpage::to_groff(cli, man->command_path);
     return 0;
   }
@@ -80,13 +80,13 @@ run(const std::vector<std::string> &args) {
 // ---------------------------------------------------------------------------
 
 int
-main(int argc, char *argv[]) {
+main(int argc, char* argv[]) {
   try {
     return run({argv + 1, argv + argc});
-  } catch (const schema::Error &e) {
+  } catch (const schema::Error& e) {
     std::cerr << "schema error: " << e.what() << "\n";
     return 1;
-  } catch (const parse::Error &e) {
+  } catch (const parse::Error& e) {
     std::cerr << "error: " << e.what() << "\n";
     return 1;
   }

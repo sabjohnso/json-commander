@@ -25,10 +25,10 @@ extern "C" {
  * API
  * -------------------------------------------------------------------------- */
 
-typedef int (*jcmd_main_fn)(const char *config_json);
+typedef int (*jcmd_main_fn)(const char* config_json);
 
 JCMD_API int
-jcmd_run(const char *cli_json, int argc, char *argv[], jcmd_main_fn main_fn);
+jcmd_run(const char* cli_json, int argc, char* argv[], jcmd_main_fn main_fn);
 
 #ifdef __cplusplus
 }

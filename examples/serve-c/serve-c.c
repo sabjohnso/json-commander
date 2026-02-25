@@ -17,18 +17,16 @@
 // Schema loading
 // ---------------------------------------------------------------------------
 
-static char *
-read_file(const char *path) {
-  FILE *f = fopen(path, "r");
-  if (!f) {
-    return NULL;
-  }
+static char*
+read_file(const char* path) {
+  FILE* f = fopen(path, "r");
+  if (!f) { return NULL; }
 
   fseek(f, 0, SEEK_END);
   long len = ftell(f);
   fseek(f, 0, SEEK_SET);
 
-  char *buf = malloc((size_t)len + 1);
+  char* buf = malloc((size_t)len + 1);
   if (buf) {
     size_t n = fread(buf, 1, (size_t)len, f);
     buf[n] = '\0';
@@ -42,46 +40,38 @@ read_file(const char *path) {
 // JSON helpers (minimal, for example purposes only)
 // ---------------------------------------------------------------------------
 
-static const char *
-json_string(const char *json, const char *key, char *buf, size_t bufsz) {
+static const char*
+json_string(const char* json, const char* key, char* buf, size_t bufsz) {
   char pattern[64];
   snprintf(pattern, sizeof(pattern), "\"%s\":\"", key);
 
-  const char *start = strstr(json, pattern);
-  if (!start) {
-    return NULL;
-  }
+  const char* start = strstr(json, pattern);
+  if (!start) { return NULL; }
   start += strlen(pattern);
 
-  const char *end = strchr(start, '"');
-  if (!end) {
-    return NULL;
-  }
+  const char* end = strchr(start, '"');
+  if (!end) { return NULL; }
 
   size_t len = (size_t)(end - start);
-  if (len >= bufsz) {
-    len = bufsz - 1;
-  }
+  if (len >= bufsz) { len = bufsz - 1; }
   memcpy(buf, start, len);
   buf[len] = '\0';
   return buf;
 }
 
 static int
-json_int(const char *json, const char *key, int fallback) {
+json_int(const char* json, const char* key, int fallback) {
   char pattern[64];
   snprintf(pattern, sizeof(pattern), "\"%s\":", key);
 
-  const char *start = strstr(json, pattern);
-  if (!start) {
-    return fallback;
-  }
+  const char* start = strstr(json, pattern);
+  if (!start) { return fallback; }
   start += strlen(pattern);
   return atoi(start);
 }
 
 static int
-json_bool(const char *json, const char *key) {
+json_bool(const char* json, const char* key) {
   char pattern[64];
   snprintf(pattern, sizeof(pattern), "\"%s\":true", key);
   return strstr(json, pattern) != NULL;
@@ -92,7 +82,7 @@ json_bool(const char *json, const char *key) {
 // ---------------------------------------------------------------------------
 
 static int
-serve_main(const char *config_json) {
+serve_main(const char* config_json) {
   char host[256];
   char dir[256];
 
@@ -102,9 +92,7 @@ serve_main(const char *config_json) {
   int verbose = json_bool(config_json, "verbose");
 
   printf("Serving %s on %s:%d", dir, host, port);
-  if (verbose) {
-    printf(" (verbose)");
-  }
+  if (verbose) { printf(" (verbose)"); }
   printf("\n");
   return 0;
 }
@@ -114,10 +102,11 @@ serve_main(const char *config_json) {
 // ---------------------------------------------------------------------------
 
 int
-main(int argc, char *argv[]) {
-  char *schema = read_file(SERVE_C_SCHEMA);
+main(int argc, char* argv[]) {
+  char* schema = read_file(SERVE_C_SCHEMA);
   if (!schema) {
-    fprintf(stderr, "%s: cannot read schema file: %s\n", argv[0], SERVE_C_SCHEMA);
+    fprintf(
+      stderr, "%s: cannot read schema file: %s\n", argv[0], SERVE_C_SCHEMA);
     return 1;
   }
 

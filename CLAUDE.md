@@ -26,10 +26,8 @@ ctest --test-dir build -C Release --output-on-failure -R <test_name>
 # Run a single test executable directly (useful for Catch2 tag filtering)
 ./build/Release/<test_name>_test "[tag]"
 
-# Reformat all .hpp files in-place (uses clang-format with LLVM-based style)
-./scripts/check-format.sh
-
-# CI verifies formatting with: ./scripts/check-format.sh && git diff --exit-code
+# Check formatting (uses pre-commit with clang-format)
+pre-commit run --all-files
 ```
 
 Build configurations: Release (`-O3 -DNDEBUG`) and RelWithDebInfo (adds ASan + UBSan). All builds use `-Wall -Wextra -pedantic -Werror`.

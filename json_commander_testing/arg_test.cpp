@@ -10,50 +10,51 @@ using json = nlohmann::json;
 
 namespace {
 
-model::Flag
-make_flag(model::ArgNames names) {
-  model::Flag f{};
-  f.names = std::move(names);
-  f.doc = {"doc"};
-  return f;
-}
+  model::Flag
+  make_flag(model::ArgNames names) {
+    model::Flag f{};
+    f.names = std::move(names);
+    f.doc = {"doc"};
+    return f;
+  }
 
-model::FlagGroup
-make_flag_group(std::string dest, std::vector<model::FlagGroupEntry> flags = {}) {
-  model::FlagGroup g{};
-  g.dest = std::move(dest);
-  g.doc = {"doc"};
-  g.default_value = json("default");
-  g.flags = std::move(flags);
-  return g;
-}
+  model::FlagGroup
+  make_flag_group(
+    std::string dest, std::vector<model::FlagGroupEntry> flags = {}) {
+    model::FlagGroup g{};
+    g.dest = std::move(dest);
+    g.doc = {"doc"};
+    g.default_value = json("default");
+    g.flags = std::move(flags);
+    return g;
+  }
 
-model::FlagGroupEntry
-make_flag_group_entry(model::ArgNames names, json value) {
-  model::FlagGroupEntry e{};
-  e.names = std::move(names);
-  e.doc = {"doc"};
-  e.value = std::move(value);
-  return e;
-}
+  model::FlagGroupEntry
+  make_flag_group_entry(model::ArgNames names, json value) {
+    model::FlagGroupEntry e{};
+    e.names = std::move(names);
+    e.doc = {"doc"};
+    e.value = std::move(value);
+    return e;
+  }
 
-model::Option
-make_option(model::ArgNames names, model::TypeSpec type) {
-  model::Option opt{};
-  opt.names = std::move(names);
-  opt.doc = {"doc"};
-  opt.type = std::move(type);
-  return opt;
-}
+  model::Option
+  make_option(model::ArgNames names, model::TypeSpec type) {
+    model::Option opt{};
+    opt.names = std::move(names);
+    opt.doc = {"doc"};
+    opt.type = std::move(type);
+    return opt;
+  }
 
-model::Positional
-make_positional(std::string name, model::TypeSpec type) {
-  model::Positional pos{};
-  pos.name = std::move(name);
-  pos.doc = {"doc"};
-  pos.type = std::move(type);
-  return pos;
-}
+  model::Positional
+  make_positional(std::string name, model::TypeSpec type) {
+    model::Positional pos{};
+    pos.name = std::move(name);
+    pos.doc = {"doc"};
+    pos.type = std::move(type);
+    return pos;
+  }
 
 } // namespace
 
@@ -257,17 +258,20 @@ TEST_CASE("make(Option) uses explicit dest when provided", "[arg]") {
   REQUIRE(spec.dest == "out_path");
 }
 
-TEST_CASE("make(Option) creates converter from type — parse 42 for Int", "[arg]") {
+TEST_CASE(
+  "make(Option) creates converter from type — parse 42 for Int", "[arg]") {
   auto opt = make_option({"count"}, model::ScalarType::Int);
   auto spec = arg::make(opt);
   REQUIRE(spec.converter.parse("42") == json(42));
 }
 
-TEST_CASE("make(Option) creates validator — required rejects nullopt", "[arg]") {
+TEST_CASE(
+  "make(Option) creates validator — required rejects nullopt", "[arg]") {
   auto opt = make_option({"count"}, model::ScalarType::Int);
   opt.required = true;
   auto spec = arg::make(opt);
-  REQUIRE_THROWS_AS(spec.validator.check("--count", std::nullopt), validate::Error);
+  REQUIRE_THROWS_AS(
+    spec.validator.check("--count", std::nullopt), validate::Error);
 }
 
 TEST_CASE("make(Option) carries default_value", "[arg]") {
@@ -292,7 +296,8 @@ TEST_CASE("make(Option) resolves env", "[arg]") {
   REQUIRE(*spec.env == arg::EnvSpec{"COUNT", std::nullopt});
 }
 
-TEST_CASE("make(Option) with enum type and choices validates choices", "[arg]") {
+TEST_CASE(
+  "make(Option) with enum type and choices validates choices", "[arg]") {
   auto opt = make_option({"format"}, model::ScalarType::Enum);
   opt.choices = std::vector<std::string>{"json", "text", "csv"};
   auto spec = arg::make(opt);
@@ -316,17 +321,20 @@ TEST_CASE("make(Positional) uses name as dest", "[arg]") {
   REQUIRE(spec.dest == "FILE");
 }
 
-TEST_CASE("make(Positional) creates converter — parse hello for String", "[arg]") {
+TEST_CASE(
+  "make(Positional) creates converter — parse hello for String", "[arg]") {
   auto pos = make_positional("FILE", model::ScalarType::String);
   auto spec = arg::make(pos);
   REQUIRE(spec.converter.parse("hello") == json("hello"));
 }
 
-TEST_CASE("make(Positional) creates validator — required rejects nullopt", "[arg]") {
+TEST_CASE(
+  "make(Positional) creates validator — required rejects nullopt", "[arg]") {
   auto pos = make_positional("FILE", model::ScalarType::String);
   pos.required = true;
   auto spec = arg::make(pos);
-  REQUIRE_THROWS_AS(spec.validator.check("FILE", std::nullopt), validate::Error);
+  REQUIRE_THROWS_AS(
+    spec.validator.check("FILE", std::nullopt), validate::Error);
 }
 
 TEST_CASE("make(Positional) carries default_value", "[arg]") {
@@ -379,9 +387,9 @@ TEST_CASE("make(Argument) with Positional holds PositionalSpec", "[arg]") {
 
 TEST_CASE("make_all converts mixed vector preserving order", "[arg]") {
   std::vector<model::Argument> args = {
-      make_flag({"verbose"}),
-      make_option({"output"}, model::ScalarType::String),
-      make_positional("FILE", model::ScalarType::String),
+    make_flag({"verbose"}),
+    make_option({"output"}, model::ScalarType::String),
+    make_positional("FILE", model::ScalarType::String),
   };
   auto specs = arg::make_all(args);
   REQUIRE(specs.size() == 3);
@@ -414,7 +422,8 @@ TEST_CASE("Option with all fields set resolves completely", "[arg]") {
   REQUIRE(spec.names == model::ArgNames{"count", "c"});
   REQUIRE(spec.dest == "counter");
   REQUIRE(spec.converter.parse("42") == json(42));
-  REQUIRE_THROWS_AS(spec.validator.check("--count", std::nullopt), validate::Error);
+  REQUIRE_THROWS_AS(
+    spec.validator.check("--count", std::nullopt), validate::Error);
   REQUIRE(spec.default_value == json(0));
   REQUIRE(spec.repeated == true);
   REQUIRE(spec.env.has_value());
@@ -434,10 +443,10 @@ TEST_CASE("Flag with only required fields uses all defaults", "[arg]") {
 
 TEST_CASE("make_all preserves argument order", "[arg]") {
   std::vector<model::Argument> args = {
-      make_positional("FILE", model::ScalarType::String),
-      make_flag({"verbose"}),
-      make_flag_group("fmt"),
-      make_option({"output"}, model::ScalarType::String),
+    make_positional("FILE", model::ScalarType::String),
+    make_flag({"verbose"}),
+    make_flag_group("fmt"),
+    make_option({"output"}, model::ScalarType::String),
   };
   auto specs = arg::make_all(args);
   REQUIRE(specs.size() == 4);
