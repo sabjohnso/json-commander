@@ -1,12 +1,11 @@
-# Build-tree config.hpp (paths point to source/build dirs)
-set(JSON_COMMANDER_SCHEMA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/schema")
-set(JSON_COMMANDER_TOOL_SCHEMA "${PROJECT_SOURCE_DIR}/tools/json_commander.json")
 configure_file(config.hpp.in config.hpp)
 
-# Install-tree config.hpp (paths point to install dirs)
-set(JSON_COMMANDER_SCHEMA_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/json_commander/schema")
-set(JSON_COMMANDER_TOOL_SCHEMA "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/json_commander/json_commander.json")
-configure_file(config.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/install/json_commander/config.hpp)
+# Embed the metaschema JSON as a string literal in a generated header
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/schema/json_commander.schema.json" METASCHEMA_CONTENT)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/schema/json_commander.schema.json")
+configure_file(metaschema_data.hpp.in
+  "${CMAKE_CURRENT_BINARY_DIR}/metaschema_data.hpp" @ONLY)
 
 add_library(json_commander_header INTERFACE)
 set_target_properties(json_commander_header PROPERTIES EXPORT_NAME header)
@@ -29,7 +28,8 @@ install(TARGETS json_commander_header json_commander_library
   ARCHIVE DESTINATION ${json_commander_INSTALL_LIBDIR})
 
 install(FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/install/json_commander/config.hpp
+  ${CMAKE_CURRENT_BINARY_DIR}/metaschema_data.hpp
+  ${CMAKE_CURRENT_BINARY_DIR}/config.hpp
   arg.hpp
   cmd.hpp
   completion.hpp

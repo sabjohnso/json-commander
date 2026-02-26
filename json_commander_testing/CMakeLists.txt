@@ -17,8 +17,14 @@ macro(json_commander_add_test test_name)
 endmacro()
 
 json_commander_add_test(metaschema)
+target_compile_definitions(metaschema_test PRIVATE
+  METASCHEMA_DIR="${CMAKE_SOURCE_DIR}/json_commander/schema")
+
 json_commander_add_test(model)
+
 json_commander_add_test(schema_loader)
+target_compile_definitions(schema_loader_test PRIVATE
+  METASCHEMA_DIR="${CMAKE_SOURCE_DIR}/json_commander/schema")
 json_commander_add_test(conv)
 json_commander_add_test(validate)
 json_commander_add_test(arg)

@@ -227,7 +227,6 @@ TEST_CASE(
   "[schema_loader]") {
   Loader loader;
   std::string metaschema_path =
-    std::string(json_commander::Config::Info::Paths::schema_dir) +
-    "/json_commander.schema.json";
+    std::string(METASCHEMA_DIR) + "/json_commander.schema.json";
   REQUIRE_THROWS_AS(loader.load(metaschema_path), Error);
 }

@@ -21,6 +21,11 @@ function(json_commander_add_executable name)
 
   set(JCMD_MAIN_FN "${JCMD_MAIN}")
 
+  # Read schema content for embedding into the executable
+  get_filename_component(_schema_abs "${JCMD_SCHEMA}" ABSOLUTE)
+  file(READ "${_schema_abs}" JCMD_SCHEMA_CONTENT)
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_schema_abs}")
+
   # Generate main.cpp via configure_file
   set(_generated_main "${CMAKE_CURRENT_BINARY_DIR}/${name}_jcmd_main.cpp")
   configure_file(
@@ -50,11 +55,6 @@ function(json_commander_add_executable name)
     nlohmann_json::nlohmann_json
     nlohmann_json_schema_validator)
 
-  # Schema path as compile definition
-  get_filename_component(_schema_abs "${JCMD_SCHEMA}" ABSOLUTE)
-  target_compile_definitions(${name} PRIVATE
-    JCMD_SCHEMA="${_schema_abs}")
-
   # C++ standard
   set_target_properties(${name} PROPERTIES
     CXX_STANDARD ${json_commander_CXX_STANDARD})
@@ -63,6 +63,10 @@ function(json_commander_add_executable name)
   target_include_directories(${name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
   include(GNUInstallDirs)
+
+  # Install schema file for reference
+  install(FILES "${_schema_abs}"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/${name}")
 
   # Man page generation and installation (on by default)
   if(NOT JCMD_NO_INSTALL_MAN)

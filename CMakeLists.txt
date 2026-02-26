@@ -53,7 +53,7 @@ install(EXPORT json_commander_EXPORTS
   FILE json-commander-exports.cmake
   DESTINATION ${json_commander_INSTALL_CONFDIR})
 
-configure_file(json-commander-config.cmake.in json-commander-config.cmake)
+configure_file(json-commander-config.cmake.in json-commander-config.cmake @ONLY)
 install(FILES ${PROJECT_BINARY_DIR}/json-commander-config.cmake
   DESTINATION ${json_commander_INSTALL_CONFDIR})
 

@@ -8,11 +8,12 @@
 //   man            Generate a groff man page for a schema
 
 #include <json_commander/cmd.hpp>
-#include <json_commander/config.hpp>
 #include <json_commander/config_schema.hpp>
 #include <json_commander/manpage.hpp>
 #include <json_commander/parse.hpp>
 #include <json_commander/schema_loader.hpp>
+
+#include "json_commander_schema.hpp"
 
 #include <iostream>
 #include <string>
@@ -27,7 +28,8 @@ using namespace json_commander;
 model::Root
 make_cli() {
   schema::Loader loader;
-  return loader.load(std::string(Config::Info::Paths::tool_schema));
+  auto j = nlohmann::json::parse(json_commander_tool_schema);
+  return loader.load(j);
 }
 
 // ---------------------------------------------------------------------------

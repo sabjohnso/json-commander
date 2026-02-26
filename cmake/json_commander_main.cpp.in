@@ -2,7 +2,9 @@
 #include <json_commander/run.hpp>
 @JCMD_FROM_HEADER_INCLUDE@
 
+static const char jcmd_schema[] = R"__jcmd__(@JCMD_SCHEMA_CONTENT@)__jcmd__";
+
 int
 main(int argc, char *argv[]) {
-  return json_commander::run_file(JCMD_SCHEMA, argc, argv, @JCMD_MAIN_FN@);
+  return json_commander::run(std::string(jcmd_schema), argc, argv, @JCMD_MAIN_FN@);
 }

@@ -9,10 +9,6 @@ namespace json_commander::Config
       static constexpr int minor = ${PROJECT_VERSION_MINOR};
       static constexpr int patch = ${PROJECT_VERSION_PATCH};
     };
-    struct Paths {
-      static constexpr char schema_dir[] = "${JSON_COMMANDER_SCHEMA_DIR}";
-      static constexpr char tool_schema[] = "${JSON_COMMANDER_TOOL_SCHEMA}";
-    };
     struct Compilers
     {
       struct C {

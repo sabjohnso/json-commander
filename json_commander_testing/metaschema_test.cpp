@@ -1,6 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
 #include <fstream>
-#include <json_commander/config.hpp>
 #include <nlohmann/json-schema.hpp>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -11,8 +10,7 @@ using nlohmann::json_schema::json_validator;
 namespace {
 
   const std::string schema_path =
-    std::string(json_commander::Config::Info::Paths::schema_dir) +
-    "/json_commander.schema.json";
+    std::string(METASCHEMA_DIR) + "/json_commander.schema.json";
 
   json
   load_json(const std::string& path) {

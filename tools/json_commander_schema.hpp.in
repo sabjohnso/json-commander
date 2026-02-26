@@ -1,0 +1,3 @@
+#pragma once
+
+static const char json_commander_tool_schema[] = R"__jcmd__(@JCMD_TOOL_SCHEMA_CONTENT@)__jcmd__";

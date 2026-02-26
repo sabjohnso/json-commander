@@ -1,0 +1,5 @@
+#pragma once
+
+namespace json_commander::schema::detail {
+  inline constexpr char metaschema_json[] = R"__jcmd__(@METASCHEMA_CONTENT@)__jcmd__";
+} // namespace json_commander::schema::detail

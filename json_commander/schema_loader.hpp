@@ -1,7 +1,7 @@
 #pragma once
 
 #include <fstream>
-#include <json_commander/config.hpp>
+#include <json_commander/metaschema_data.hpp>
 #include <json_commander/model_json.hpp>
 #include <nlohmann/json-schema.hpp>
 #include <nlohmann/json.hpp>
@@ -19,11 +19,7 @@ namespace json_commander::schema {
   class Loader {
   public:
     Loader() {
-      std::string path = std::string(Config::Info::Paths::schema_dir) +
-                         "/json_commander.schema.json";
-      std::ifstream f(path);
-      if (!f.is_open()) { throw Error("failed to open metaschema: " + path); }
-      auto metaschema = nlohmann::json::parse(f);
+      auto metaschema = nlohmann::json::parse(detail::metaschema_json);
       validator_.set_root_schema(metaschema);
     }
 
