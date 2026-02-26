@@ -217,6 +217,51 @@ TEST_CASE("run: bad json returns 1", "[run]") {
 // Tests for run_file
 // ===========================================================================
 
+TEST_CASE(
+  "run: --help-completion bash returns 0, callback not called", "[run]") {
+  auto cli = make_test_cli();
+  Argv args{"test-app", "--help-completion", "bash"};
+
+  bool called = false;
+  int rc = json_commander::run(cli, args.argc(), args.argv(), [&](const json&) {
+    called = true;
+    return 0;
+  });
+
+  REQUIRE(rc == 0);
+  REQUIRE_FALSE(called);
+}
+
+TEST_CASE(
+  "run: --help-completion zsh returns 0, callback not called", "[run]") {
+  auto cli = make_test_cli();
+  Argv args{"test-app", "--help-completion", "zsh"};
+
+  bool called = false;
+  int rc = json_commander::run(cli, args.argc(), args.argv(), [&](const json&) {
+    called = true;
+    return 0;
+  });
+
+  REQUIRE(rc == 0);
+  REQUIRE_FALSE(called);
+}
+
+TEST_CASE(
+  "run: --help-completion fish returns 0, callback not called", "[run]") {
+  auto cli = make_test_cli();
+  Argv args{"test-app", "--help-completion", "fish"};
+
+  bool called = false;
+  int rc = json_commander::run(cli, args.argc(), args.argv(), [&](const json&) {
+    called = true;
+    return 0;
+  });
+
+  REQUIRE(rc == 0);
+  REQUIRE_FALSE(called);
+}
+
 TEST_CASE("run_file: loads schema and parses ok", "[run]") {
   Argv args{"serve", "--port", "3000"};
 

@@ -43,8 +43,16 @@ namespace json_commander::parse {
     std::vector<std::string> command_path;
   };
 
-  using ParseResult =
-    std::variant<ParseOk, HelpRequest, VersionRequest, ManpageRequest>;
+  struct CompletionRequest {
+    std::string shell;
+  };
+
+  using ParseResult = std::variant<
+    ParseOk,
+    HelpRequest,
+    VersionRequest,
+    ManpageRequest,
+    CompletionRequest>;
 
   // -------------------------------------------------------------------------
   // Environment lookup
@@ -176,8 +184,12 @@ namespace json_commander::parse {
       std::size_t next_pos;
     };
 
-    using LevelResult =
-      std::variant<LevelOk, HelpRequest, VersionRequest, ManpageRequest>;
+    using LevelResult = std::variant<
+      LevelOk,
+      HelpRequest,
+      VersionRequest,
+      ManpageRequest,
+      CompletionRequest>;
 
     inline LevelResult
     parse_level(
@@ -225,6 +237,22 @@ namespace json_commander::parse {
 
           // Check for --help-man
           if (token == "--help-man") { return ManpageRequest{command_path}; }
+
+          // Check for --help-completion <shell>
+          if (token == "--help-completion") {
+            ++i;
+            if (i >= tokens.size()) {
+              throw Error(
+                "--help-completion requires a shell name (bash, zsh, fish)");
+            }
+            const auto& shell = tokens[i];
+            if (shell != "bash" && shell != "zsh" && shell != "fish") {
+              throw Error(
+                "--help-completion: unknown shell '" + shell +
+                "' (expected bash, zsh, or fish)");
+            }
+            return CompletionRequest{shell};
+          }
 
           // Check for --version at root
           if (is_root && token == "--version") {
@@ -400,6 +428,9 @@ namespace json_commander::parse {
               }
               if (std::holds_alternative<VersionRequest>(sub_result)) {
                 return VersionRequest{};
+              }
+              if (auto* comp = std::get_if<CompletionRequest>(&sub_result)) {
+                return *comp;
               }
 
               auto& sub_ok = std::get<LevelOk>(sub_result);
@@ -618,6 +649,9 @@ namespace json_commander::parse {
     }
     if (std::holds_alternative<VersionRequest>(level_result)) {
       return VersionRequest{};
+    }
+    if (auto* comp = std::get_if<CompletionRequest>(&level_result)) {
+      return *comp;
     }
 
     auto& ok = std::get<detail::LevelOk>(level_result);

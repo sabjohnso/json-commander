@@ -1236,3 +1236,73 @@ TEST_CASE(
   REQUIRE(ok1.config == ok2.config);
   REQUIRE(ok1.command_path == ok2.command_path);
 }
+
+// ===========================================================================
+// Phase 14: CompletionRequest
+// ===========================================================================
+
+TEST_CASE("ParseResult holds CompletionRequest", "[parse][phase14]") {
+  parse::ParseResult result = parse::CompletionRequest{"bash"};
+  REQUIRE(std::holds_alternative<parse::CompletionRequest>(result));
+  REQUIRE(std::get<parse::CompletionRequest>(result).shell == "bash");
+}
+
+TEST_CASE(
+  "--help-completion bash returns CompletionRequest", "[parse][phase14]") {
+  auto root = make_root("tool");
+  root.args = {arg::ArgSpec{make_option({"output"})}};
+
+  auto result =
+    parse::parse(root, {"--help-completion", "bash"}, parse::no_env());
+  REQUIRE(std::holds_alternative<parse::CompletionRequest>(result));
+  REQUIRE(std::get<parse::CompletionRequest>(result).shell == "bash");
+}
+
+TEST_CASE(
+  "--help-completion zsh returns CompletionRequest", "[parse][phase14]") {
+  auto root = make_root("tool");
+
+  auto result =
+    parse::parse(root, {"--help-completion", "zsh"}, parse::no_env());
+  REQUIRE(std::holds_alternative<parse::CompletionRequest>(result));
+  REQUIRE(std::get<parse::CompletionRequest>(result).shell == "zsh");
+}
+
+TEST_CASE(
+  "--help-completion fish returns CompletionRequest", "[parse][phase14]") {
+  auto root = make_root("tool");
+
+  auto result =
+    parse::parse(root, {"--help-completion", "fish"}, parse::no_env());
+  REQUIRE(std::holds_alternative<parse::CompletionRequest>(result));
+  REQUIRE(std::get<parse::CompletionRequest>(result).shell == "fish");
+}
+
+TEST_CASE("--help-completion without shell name throws", "[parse][phase14]") {
+  auto root = make_root("tool");
+
+  REQUIRE_THROWS_AS(
+    parse::parse(root, {"--help-completion"}, parse::no_env()), parse::Error);
+}
+
+TEST_CASE("--help-completion with unknown shell throws", "[parse][phase14]") {
+  auto root = make_root("tool");
+
+  REQUIRE_THROWS_AS(
+    parse::parse(root, {"--help-completion", "powershell"}, parse::no_env()),
+    parse::Error);
+}
+
+TEST_CASE(
+  "--help-completion in subcommand returns CompletionRequest",
+  "[parse][phase14]") {
+  auto sub = make_command("build");
+  sub.args = {arg::ArgSpec{make_option({"target"})}};
+  auto root = make_root("tool");
+  root.commands = {sub};
+
+  auto result =
+    parse::parse(root, {"build", "--help-completion", "bash"}, parse::no_env());
+  REQUIRE(std::holds_alternative<parse::CompletionRequest>(result));
+  REQUIRE(std::get<parse::CompletionRequest>(result).shell == "bash");
+}

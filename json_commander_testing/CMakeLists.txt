@@ -26,6 +26,7 @@ json_commander_add_test(cmd)
 json_commander_add_test(manpage)
 json_commander_add_test(parse)
 json_commander_add_test(config_schema)
+json_commander_add_test(completion)
 
 json_commander_add_test(run)
 target_compile_definitions(run_test PRIVATE

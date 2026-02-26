@@ -59,5 +59,7 @@ install(FILES ${PROJECT_BINARY_DIR}/json-commander-config.cmake
 
 install(FILES
   cmake/json_commander_add_executable.cmake
+  cmake/json_commander_generate_completion.cmake
+  cmake/json_commander_generate_manpage.cmake
   cmake/json_commander_main.cpp.in
   DESTINATION ${json_commander_INSTALL_CONFDIR})

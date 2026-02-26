@@ -1,6 +1,7 @@
 #pragma once
 
 #include <json_commander/cmd.hpp>
+#include <json_commander/completion.hpp>
 #include <json_commander/manpage.hpp>
 #include <json_commander/parse.hpp>
 #include <json_commander/schema_loader.hpp>
@@ -76,6 +77,15 @@ namespace json_commander {
           return 0;
         } else if constexpr (std::is_same_v<T, parse::ManpageRequest>) {
           std::cout << manpage::to_groff(root, r.command_path);
+          return 0;
+        } else if constexpr (std::is_same_v<T, parse::CompletionRequest>) {
+          if (r.shell == "bash") {
+            std::cout << completion::to_bash(root);
+          } else if (r.shell == "zsh") {
+            std::cout << completion::to_zsh(root);
+          } else if (r.shell == "fish") {
+            std::cout << completion::to_fish(root);
+          }
           return 0;
         }
       },

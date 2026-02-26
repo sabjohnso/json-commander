@@ -32,6 +32,7 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/install/json_commander/config.hpp
   arg.hpp
   cmd.hpp
+  completion.hpp
   config_schema.hpp
   conv.hpp
   manpage.hpp
