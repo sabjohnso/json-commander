@@ -8,6 +8,7 @@
 //   man            Generate a groff man page for a schema
 
 #include <json_commander/cmd.hpp>
+#include <json_commander/completion.hpp>
 #include <json_commander/config_schema.hpp>
 #include <json_commander/manpage.hpp>
 #include <json_commander/parse.hpp>
@@ -173,6 +174,17 @@ run(const std::vector<std::string>& args) {
 
   if (auto* man = std::get_if<parse::ManpageRequest>(&result)) {
     std::cout << manpage::to_groff(cli, man->command_path);
+    return 0;
+  }
+
+  if (auto* comp = std::get_if<parse::CompletionRequest>(&result)) {
+    if (comp->shell == "bash") {
+      std::cout << completion::to_bash(cli);
+    } else if (comp->shell == "zsh") {
+      std::cout << completion::to_zsh(cli);
+    } else if (comp->shell == "fish") {
+      std::cout << completion::to_fish(cli);
+    }
     return 0;
   }
 

@@ -1,6 +1,6 @@
 function(json_commander_add_executable name)
   cmake_parse_arguments(JCMD
-    "WIN32;MACOSX_BUNDLE;EXCLUDE_FROM_ALL;NO_INSTALL_MAN;NO_INSTALL_COMPLETION"
+    "WIN32;MACOSX_BUNDLE;EXCLUDE_FROM_ALL;NO_INSTALL"
     "SCHEMA;MAIN;FROM_HEADER"
     ""
     ${ARGN})
@@ -62,14 +62,14 @@ function(json_commander_add_executable name)
   # Ensure FROM_HEADER can be found relative to the caller's source dir
   target_include_directories(${name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
-  include(GNUInstallDirs)
+  if(NOT JCMD_NO_INSTALL)
+    include(GNUInstallDirs)
 
-  # Install schema file for reference
-  install(FILES "${_schema_abs}"
-    DESTINATION "${CMAKE_INSTALL_DATADIR}/${name}")
+    # Install schema file for reference
+    install(FILES "${_schema_abs}"
+      DESTINATION "${CMAKE_INSTALL_DATADIR}/${name}")
 
-  # Man page generation and installation (on by default)
-  if(NOT JCMD_NO_INSTALL_MAN)
+    # Man page generation and installation
     set(_manpage "${CMAKE_CURRENT_BINARY_DIR}/${name}.1")
     set(_man_script "${json_commander_TEMPLATE_DIR}/json_commander_generate_manpage.cmake")
 
@@ -86,10 +86,8 @@ function(json_commander_add_executable name)
 
     install(FILES "${_manpage}"
       DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
-  endif()
 
-  # Shell completion generation and installation (on by default)
-  if(NOT JCMD_NO_INSTALL_COMPLETION)
+    # Shell completion generation and installation
     set(_comp_script "${json_commander_TEMPLATE_DIR}/json_commander_generate_completion.cmake")
 
     # Bash completion

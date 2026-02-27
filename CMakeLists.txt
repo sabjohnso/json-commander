@@ -4,6 +4,7 @@ project(json-commander VERSION 0.3.0 LANGUAGES C CXX)
 
 option(json_commander_BUILD_TESTING "Build the json-commander tests" ON)
 option(json_commander_BUILD_EXAMPLES "Build the json-commander examples" ON)
+option(json_commander_INSTALL_EXAMPLES "Install the json-commander examples" OFF)
 option(json_commander_BUILD_TOOLS "Build the json-commander tools" ON)
 option(json_commander_BUILD_C_API "Build the json-commander C API shared library" ON)
 set(json_commander_CXX_STANDARD 20 CACHE STRING "C++ standard for json-commander")
