@@ -17,10 +17,10 @@
 		"CMAKE_C_FLAGS_RELWITHDEBINFO" : "-fsanitize=undefined -fsanitize=address -g -O3",
 		"CMAKE_EXPORT_COMPILE_COMMANDS" : "ON",
                 "lbmbench_BUILD_EXAMPLES" : "OFF",
-                "nlohmann_json_GIT_TAG" : "v3.10.0",
+                "nlohmann_json_GIT_TAG" : "v3.12.0",
                 "nlohmann_json_FORCE_DOWNLOAD" : true,
-                "nlohmann_json_schema_validator_FORCE_DOWNLOAD" : true,
                 "nlohmann_json_schema_validator_GIT_TAG" : "2.4.0",
+                "nlohmann_json_schema_validator_FORCE_DOWNLOAD" : true,
                 "JSON_VALIDATOR_BUILD_TESTS" : "OFF",
                 "JSON_VALIDATOR_BUILD_EXAMPLES" : "OFF"
 	    },

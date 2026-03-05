@@ -619,7 +619,10 @@ namespace json_commander::manpage {
     std::vector<model::ManBlock> blocks;
     for (const auto& e : exits) {
       std::string label = std::to_string(e.code);
-      if (e.max.has_value()) { label += "-" + std::to_string(*e.max); }
+      if (e.max.has_value()) {
+        label += "-";
+        label += std::to_string(*e.max);
+      }
       blocks.push_back(model::LabelTextBlock{label, e.doc});
     }
     return {s_exit_status, blocks};
