@@ -5,14 +5,28 @@
 #
 # Expected variables (passed via -D on the command line):
 #   JCMD_EXECUTABLE  - path to the built executable
-#   JCMD_OUTPUT      - path to the output .1 file
+#   JCMD_OUTPUT_DIR  - directory for the output .1 file
+#   JCMD_NAME        - base name for the man page file (e.g., "my-tool")
 #   JCMD_SUBCOMMAND  - (optional) space-separated subcommand path
+#   JCMD_SUBCMD_NAME - (optional) hyphenated subcommand name suffix
 
 if(NOT JCMD_EXECUTABLE)
   message(FATAL_ERROR "JCMD_EXECUTABLE is required")
 endif()
-if(NOT JCMD_OUTPUT)
-  message(FATAL_ERROR "JCMD_OUTPUT is required")
+if(NOT JCMD_OUTPUT_DIR)
+  message(FATAL_ERROR "JCMD_OUTPUT_DIR is required")
+endif()
+if(NOT JCMD_NAME)
+  message(FATAL_ERROR "JCMD_NAME is required")
+endif()
+
+file(MAKE_DIRECTORY "${JCMD_OUTPUT_DIR}")
+
+# Derive output filename
+if(JCMD_SUBCMD_NAME)
+  set(_output "${JCMD_OUTPUT_DIR}/${JCMD_NAME}-${JCMD_SUBCMD_NAME}.1")
+else()
+  set(_output "${JCMD_OUTPUT_DIR}/${JCMD_NAME}.1")
 endif()
 
 # Build the command: executable [subcmd1 subcmd2 ...] --help-man
@@ -25,7 +39,7 @@ list(APPEND _cmd --help-man)
 
 execute_process(
   COMMAND ${_cmd}
-  OUTPUT_FILE "${JCMD_OUTPUT}"
+  OUTPUT_FILE "${_output}"
   RESULT_VARIABLE _rc)
 
 if(NOT _rc EQUAL 0)
