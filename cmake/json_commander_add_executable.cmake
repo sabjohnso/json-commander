@@ -115,24 +115,23 @@ function(json_commander_add_executable name)
     install(FILES "${_schema_abs}"
       DESTINATION "${CMAKE_INSTALL_DATADIR}/${name}")
 
-    # Man page generation and installation
-    set(_manpage "${CMAKE_CURRENT_BINARY_DIR}/${name}.1")
+    # Output directory for generated man pages and completions
+    set(_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/${name}_generated")
     set(_man_script "${json_commander_TEMPLATE_DIR}/json_commander_generate_manpage.cmake")
+    set(_exe_base_name "$<TARGET_FILE_BASE_NAME:${name}>")
 
-    add_custom_command(
-      OUTPUT "${_manpage}"
+    # Man page generation — root command
+    set(_man_commands
       COMMAND ${CMAKE_COMMAND}
         -DJCMD_EXECUTABLE=$<TARGET_FILE:${name}>
-        -DJCMD_OUTPUT=${_manpage}
-        -P "${_man_script}"
-      DEPENDS ${name}
-      COMMENT "Generating man page for ${name}")
+        -DJCMD_OUTPUT_DIR=${_gen_dir}
+        -DJCMD_NAME=${_exe_base_name}
+        -P "${_man_script}")
 
     # Collect subcommand man pages
     set(_subcmd_names "")
     set(_subcmd_args "")
     _jcmd_collect_subcommands("${JCMD_SCHEMA_CONTENT}" "" "" _subcmd_names _subcmd_args)
-    set(_all_manpages "${_manpage}")
 
     list(LENGTH _subcmd_names _subcmd_count)
     if(_subcmd_count GREATER 0)
@@ -140,75 +139,65 @@ function(json_commander_add_executable name)
       foreach(_idx RANGE 0 ${_subcmd_last})
         list(GET _subcmd_names ${_idx} _sname)
         list(GET _subcmd_args ${_idx} _sargs)
-        set(_sub_manpage "${CMAKE_CURRENT_BINARY_DIR}/${name}-${_sname}.1")
-        add_custom_command(
-          OUTPUT "${_sub_manpage}"
+        list(APPEND _man_commands
           COMMAND ${CMAKE_COMMAND}
             -DJCMD_EXECUTABLE=$<TARGET_FILE:${name}>
+            -DJCMD_OUTPUT_DIR=${_gen_dir}
+            -DJCMD_NAME=${_exe_base_name}
             "-DJCMD_SUBCOMMAND=${_sargs}"
-            -DJCMD_OUTPUT=${_sub_manpage}
-            -P "${_man_script}"
-          DEPENDS ${name}
-          COMMENT "Generating man page for ${name}-${_sname}")
-        list(APPEND _all_manpages "${_sub_manpage}")
+            "-DJCMD_SUBCMD_NAME=${_sname}"
+            -P "${_man_script}")
       endforeach()
     endif()
 
-    add_custom_target(${name}_manpage ALL DEPENDS ${_all_manpages})
+    add_custom_target(${name}_manpage ALL
+      ${_man_commands}
+      DEPENDS ${name}
+      COMMENT "Generating man pages for ${name}")
 
-    install(FILES ${_all_manpages}
-      DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
+    install(CODE "
+      file(GLOB _manpages \"${_gen_dir}/*.1\")
+      foreach(_mp IN LISTS _manpages)
+        file(INSTALL \"\${_mp}\"
+          DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_MANDIR}/man1\")
+      endforeach()
+    ")
 
     # Shell completion generation and installation
     set(_comp_script "${json_commander_TEMPLATE_DIR}/json_commander_generate_completion.cmake")
 
-    # Bash completion
-    set(_bash_comp "${CMAKE_CURRENT_BINARY_DIR}/${name}.bash")
-    add_custom_command(
-      OUTPUT "${_bash_comp}"
+    add_custom_target(${name}_completions ALL
       COMMAND ${CMAKE_COMMAND}
         -DJCMD_EXECUTABLE=$<TARGET_FILE:${name}>
         -DJCMD_SHELL=bash
-        -DJCMD_OUTPUT=${_bash_comp}
+        -DJCMD_OUTPUT_DIR=${_gen_dir}
+        -DJCMD_NAME=${_exe_base_name}
         -P "${_comp_script}"
-      DEPENDS ${name}
-      COMMENT "Generating bash completion for ${name}")
-
-    # Zsh completion
-    set(_zsh_comp "${CMAKE_CURRENT_BINARY_DIR}/_${name}")
-    add_custom_command(
-      OUTPUT "${_zsh_comp}"
       COMMAND ${CMAKE_COMMAND}
         -DJCMD_EXECUTABLE=$<TARGET_FILE:${name}>
         -DJCMD_SHELL=zsh
-        -DJCMD_OUTPUT=${_zsh_comp}
+        -DJCMD_OUTPUT_DIR=${_gen_dir}
+        -DJCMD_NAME=${_exe_base_name}
         -P "${_comp_script}"
-      DEPENDS ${name}
-      COMMENT "Generating zsh completion for ${name}")
-
-    # Fish completion
-    set(_fish_comp "${CMAKE_CURRENT_BINARY_DIR}/${name}.fish")
-    add_custom_command(
-      OUTPUT "${_fish_comp}"
       COMMAND ${CMAKE_COMMAND}
         -DJCMD_EXECUTABLE=$<TARGET_FILE:${name}>
         -DJCMD_SHELL=fish
-        -DJCMD_OUTPUT=${_fish_comp}
+        -DJCMD_OUTPUT_DIR=${_gen_dir}
+        -DJCMD_NAME=${_exe_base_name}
         -P "${_comp_script}"
       DEPENDS ${name}
-      COMMENT "Generating fish completion for ${name}")
+      COMMENT "Generating shell completions for ${name}")
 
-    add_custom_target(${name}_completions ALL
-      DEPENDS "${_bash_comp}" "${_zsh_comp}" "${_fish_comp}")
-
-    install(FILES "${_bash_comp}"
-      DESTINATION "${CMAKE_INSTALL_DATADIR}/bash-completion/completions"
-      RENAME "${name}")
-
-    install(FILES "${_zsh_comp}"
-      DESTINATION "${CMAKE_INSTALL_DATADIR}/zsh/site-functions")
-
-    install(FILES "${_fish_comp}"
-      DESTINATION "${CMAKE_INSTALL_DATADIR}/fish/vendor_completions.d")
+    install(CODE "
+      set(_gen_dir \"${_gen_dir}\")
+      set(_exe_name \"$<TARGET_FILE_BASE_NAME:${name}>\")
+      file(INSTALL \"\${_gen_dir}/\${_exe_name}.bash\"
+        DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/bash-completion/completions\"
+        RENAME \"\${_exe_name}\")
+      file(INSTALL \"\${_gen_dir}/_\${_exe_name}\"
+        DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/zsh/site-functions\")
+      file(INSTALL \"\${_gen_dir}/\${_exe_name}.fish\"
+        DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/fish/vendor_completions.d\")
+    ")
   endif()
 endfunction()
