@@ -1,3 +1,49 @@
+# Recursively collect subcommand paths from a JSON schema string.
+# Populates two parallel lists (by name suffix) in PARENT_SCOPE:
+#   ${out_names}  - hyphen-joined display names for filenames (e.g., "config-schema")
+#   ${out_args}   - space-separated argument strings for the executable (e.g., "config-schema")
+# The prefix_name and prefix_args track the current nesting path.
+function(_jcmd_collect_subcommands json_content prefix_name prefix_args out_names out_args)
+  set(_names "${${out_names}}")
+  set(_args "${${out_args}}")
+
+  # Check if "commands" key exists
+  string(JSON _commands_type ERROR_VARIABLE _err TYPE "${json_content}" "commands")
+  if(_err OR NOT _commands_type STREQUAL "ARRAY")
+    set(${out_names} "${_names}" PARENT_SCOPE)
+    set(${out_args} "${_args}" PARENT_SCOPE)
+    return()
+  endif()
+
+  string(JSON _count LENGTH "${json_content}" "commands")
+  if(_count EQUAL 0)
+    set(${out_names} "${_names}" PARENT_SCOPE)
+    set(${out_args} "${_args}" PARENT_SCOPE)
+    return()
+  endif()
+
+  math(EXPR _last "${_count} - 1")
+  foreach(_i RANGE 0 ${_last})
+    string(JSON _cmd_name GET "${json_content}" "commands" ${_i} "name")
+    if(prefix_name)
+      set(_cur_name "${prefix_name}-${_cmd_name}")
+      set(_cur_args "${prefix_args} ${_cmd_name}")
+    else()
+      set(_cur_name "${_cmd_name}")
+      set(_cur_args "${_cmd_name}")
+    endif()
+    list(APPEND _names "${_cur_name}")
+    list(APPEND _args "${_cur_args}")
+
+    # Recurse into nested commands
+    string(JSON _subcmd GET "${json_content}" "commands" ${_i})
+    _jcmd_collect_subcommands("${_subcmd}" "${_cur_name}" "${_cur_args}" _names _args)
+  endforeach()
+
+  set(${out_names} "${_names}" PARENT_SCOPE)
+  set(${out_args} "${_args}" PARENT_SCOPE)
+endfunction()
+
 function(json_commander_add_executable name)
   cmake_parse_arguments(JCMD
     "WIN32;MACOSX_BUNDLE;EXCLUDE_FROM_ALL;NO_INSTALL"
@@ -82,9 +128,35 @@ function(json_commander_add_executable name)
       DEPENDS ${name}
       COMMENT "Generating man page for ${name}")
 
-    add_custom_target(${name}_manpage ALL DEPENDS "${_manpage}")
+    # Collect subcommand man pages
+    set(_subcmd_names "")
+    set(_subcmd_args "")
+    _jcmd_collect_subcommands("${JCMD_SCHEMA_CONTENT}" "" "" _subcmd_names _subcmd_args)
+    set(_all_manpages "${_manpage}")
 
-    install(FILES "${_manpage}"
+    list(LENGTH _subcmd_names _subcmd_count)
+    if(_subcmd_count GREATER 0)
+      math(EXPR _subcmd_last "${_subcmd_count} - 1")
+      foreach(_idx RANGE 0 ${_subcmd_last})
+        list(GET _subcmd_names ${_idx} _sname)
+        list(GET _subcmd_args ${_idx} _sargs)
+        set(_sub_manpage "${CMAKE_CURRENT_BINARY_DIR}/${name}-${_sname}.1")
+        add_custom_command(
+          OUTPUT "${_sub_manpage}"
+          COMMAND ${CMAKE_COMMAND}
+            -DJCMD_EXECUTABLE=$<TARGET_FILE:${name}>
+            "-DJCMD_SUBCOMMAND=${_sargs}"
+            -DJCMD_OUTPUT=${_sub_manpage}
+            -P "${_man_script}"
+          DEPENDS ${name}
+          COMMENT "Generating man page for ${name}-${_sname}")
+        list(APPEND _all_manpages "${_sub_manpage}")
+      endforeach()
+    endif()
+
+    add_custom_target(${name}_manpage ALL DEPENDS ${_all_manpages})
+
+    install(FILES ${_all_manpages}
       DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
 
     # Shell completion generation and installation

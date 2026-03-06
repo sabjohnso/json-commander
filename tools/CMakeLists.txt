@@ -35,9 +35,36 @@ add_custom_command(
   DEPENDS json-commander
   COMMENT "Generating man page for json-commander")
 
-add_custom_target(json-commander_manpage ALL DEPENDS "${_manpage}")
+# Collect subcommand man pages
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/json_commander.json" _tool_schema)
+set(_subcmd_names "")
+set(_subcmd_args "")
+_jcmd_collect_subcommands("${_tool_schema}" "" "" _subcmd_names _subcmd_args)
+set(_all_manpages "${_manpage}")
 
-install(FILES "${_manpage}"
+list(LENGTH _subcmd_names _subcmd_count)
+if(_subcmd_count GREATER 0)
+  math(EXPR _subcmd_last "${_subcmd_count} - 1")
+  foreach(_idx RANGE 0 ${_subcmd_last})
+    list(GET _subcmd_names ${_idx} _sname)
+    list(GET _subcmd_args ${_idx} _sargs)
+    set(_sub_manpage "${CMAKE_CURRENT_BINARY_DIR}/json-commander-${_sname}.1")
+    add_custom_command(
+      OUTPUT "${_sub_manpage}"
+      COMMAND ${CMAKE_COMMAND}
+        -DJCMD_EXECUTABLE=$<TARGET_FILE:json-commander>
+        "-DJCMD_SUBCOMMAND=${_sargs}"
+        -DJCMD_OUTPUT=${_sub_manpage}
+        -P "${_man_script}"
+      DEPENDS json-commander
+      COMMENT "Generating man page for json-commander-${_sname}")
+    list(APPEND _all_manpages "${_sub_manpage}")
+  endforeach()
+endif()
+
+add_custom_target(json-commander_manpage ALL DEPENDS ${_all_manpages})
+
+install(FILES ${_all_manpages}
   DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
 
 # Shell completion generation and installation
