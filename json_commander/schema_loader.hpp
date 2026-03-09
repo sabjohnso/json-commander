@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <fstream>
 #include <json_commander/metaschema_data.hpp>
 #include <json_commander/model_json.hpp>
@@ -15,6 +16,41 @@ namespace json_commander::schema {
     explicit Error(const std::string& message)
         : std::runtime_error(message) {}
   };
+
+  namespace detail {
+
+    inline void
+    resolve_external_refs(
+      nlohmann::json& j, const std::filesystem::path& base_dir) {
+      if (!j.is_object() || !j.contains("commands")) { return; }
+
+      auto& commands = j["commands"];
+      if (!commands.is_array()) { return; }
+
+      for (auto& entry : commands) {
+        if (entry.is_string()) {
+          auto ref_path = base_dir / entry.get<std::string>();
+          std::ifstream f(ref_path);
+          if (!f.is_open()) {
+            throw Error(
+              "failed to open external command file: " + ref_path.string());
+          }
+          try {
+            entry = nlohmann::json::parse(f);
+          } catch (const nlohmann::json::parse_error& e) {
+            throw Error(
+              "failed to parse external command file: " + ref_path.string() +
+              ": " + e.what());
+          }
+          // Recurse into the loaded command (it may have its own external refs)
+          resolve_external_refs(entry, ref_path.parent_path());
+        } else if (entry.is_object()) {
+          resolve_external_refs(entry, base_dir);
+        }
+      }
+    }
+
+  } // namespace detail
 
   class Loader {
   public:
@@ -41,6 +77,9 @@ namespace json_commander::schema {
       } catch (const nlohmann::json::parse_error& e) {
         throw Error("failed to parse JSON: " + path + ": " + e.what());
       }
+      auto base_dir = std::filesystem::path(path).parent_path();
+      if (base_dir.empty()) { base_dir = "."; }
+      detail::resolve_external_refs(j, base_dir);
       return load(j);
     }
 

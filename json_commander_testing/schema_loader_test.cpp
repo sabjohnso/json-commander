@@ -1,6 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <json_commander/schema_loader.hpp>
 
+#include <filesystem>
+
 using namespace json_commander::schema;
 
 // ---------------------------------------------------------------------------
@@ -229,4 +231,205 @@ TEST_CASE(
   std::string metaschema_path =
     std::string(METASCHEMA_DIR) + "/json_commander.schema.json";
   REQUIRE_THROWS_AS(loader.load(metaschema_path), Error);
+}
+
+// ---------------------------------------------------------------------------
+// Phase 5: External file references for subcommands
+// ---------------------------------------------------------------------------
+
+namespace {
+
+  // Helper to write JSON to a file and ensure cleanup
+  struct TempFile {
+    std::string path;
+    TempFile(const std::string& p, const nlohmann::json& j)
+        : path(p) {
+      std::filesystem::create_directories(
+        std::filesystem::path(p).parent_path());
+      std::ofstream out(p);
+      out << j.dump(2);
+    }
+    ~TempFile() { std::remove(path.c_str()); }
+  };
+
+  struct TempDir {
+    std::string path;
+    explicit TempDir(const std::string& p)
+        : path(p) {
+      std::filesystem::create_directories(p);
+    }
+    ~TempDir() { std::filesystem::remove_all(path); }
+  };
+
+} // namespace
+
+TEST_CASE(
+  "load(path) resolves string entries in commands as external files",
+  "[schema_loader][external]") {
+  TempDir dir("/tmp/jcmd_test_external");
+
+  nlohmann::json deploy_cmd = {
+    {"name", "deploy"},
+    {"doc", {"Deploy the app."}},
+    {"args",
+     {{{"kind", "option"},
+       {"names", {"target"}},
+       {"doc", {"Deploy target."}},
+       {"type", "string"}}}}};
+
+  TempFile deploy_file("/tmp/jcmd_test_external/deploy.json", deploy_cmd);
+
+  nlohmann::json root_json = {
+    {"name", "mytool"},
+    {"doc", {"A tool."}},
+    {"commands",
+     {{{"name", "build"}, {"doc", {"Build stuff."}}}, "deploy.json"}}};
+
+  TempFile root_file("/tmp/jcmd_test_external/mytool.json", root_json);
+
+  Loader loader;
+  auto root = loader.load(std::string("/tmp/jcmd_test_external/mytool.json"));
+
+  REQUIRE(root.commands.has_value());
+  REQUIRE(root.commands->size() == 2);
+  REQUIRE((*root.commands)[0].name == "build");
+  REQUIRE((*root.commands)[1].name == "deploy");
+  REQUIRE((*root.commands)[1].args.has_value());
+}
+
+TEST_CASE(
+  "load(path) resolves nested external references recursively",
+  "[schema_loader][external]") {
+  TempDir dir("/tmp/jcmd_test_nested");
+
+  nlohmann::json leaf_cmd = {{"name", "leaf"}, {"doc", {"A leaf command."}}};
+
+  TempFile leaf_file("/tmp/jcmd_test_nested/leaf.json", leaf_cmd);
+
+  nlohmann::json mid_cmd = {
+    {"name", "mid"},
+    {"doc", {"A middle command."}},
+    {"commands", {"leaf.json"}}};
+
+  TempFile mid_file("/tmp/jcmd_test_nested/mid.json", mid_cmd);
+
+  nlohmann::json root_json = {
+    {"name", "mytool"}, {"doc", {"A tool."}}, {"commands", {"mid.json"}}};
+
+  TempFile root_file("/tmp/jcmd_test_nested/mytool.json", root_json);
+
+  Loader loader;
+  auto root = loader.load(std::string("/tmp/jcmd_test_nested/mytool.json"));
+
+  REQUIRE(root.commands.has_value());
+  REQUIRE(root.commands->size() == 1);
+  REQUIRE((*root.commands)[0].name == "mid");
+  REQUIRE((*root.commands)[0].commands.has_value());
+  REQUIRE((*root.commands)[0].commands->size() == 1);
+  REQUIRE((*root.commands)[0].commands->at(0).name == "leaf");
+}
+
+TEST_CASE(
+  "load(path) resolves external files in subdirectories",
+  "[schema_loader][external]") {
+  TempDir dir("/tmp/jcmd_test_subdir");
+
+  nlohmann::json deploy_cmd = {
+    {"name", "deploy"}, {"doc", {"Deploy the app."}}};
+
+  TempFile deploy_file(
+    "/tmp/jcmd_test_subdir/commands/deploy.json", deploy_cmd);
+
+  nlohmann::json root_json = {
+    {"name", "mytool"},
+    {"doc", {"A tool."}},
+    {"commands", {"commands/deploy.json"}}};
+
+  TempFile root_file("/tmp/jcmd_test_subdir/mytool.json", root_json);
+
+  Loader loader;
+  auto root = loader.load(std::string("/tmp/jcmd_test_subdir/mytool.json"));
+
+  REQUIRE(root.commands.has_value());
+  REQUIRE(root.commands->size() == 1);
+  REQUIRE((*root.commands)[0].name == "deploy");
+}
+
+TEST_CASE(
+  "load(path) throws Error for missing external file",
+  "[schema_loader][external]") {
+  TempDir dir("/tmp/jcmd_test_missing");
+
+  nlohmann::json root_json = {
+    {"name", "mytool"},
+    {"doc", {"A tool."}},
+    {"commands", {"nonexistent.json"}}};
+
+  TempFile root_file("/tmp/jcmd_test_missing/mytool.json", root_json);
+
+  Loader loader;
+  REQUIRE_THROWS_AS(
+    loader.load(std::string("/tmp/jcmd_test_missing/mytool.json")), Error);
+}
+
+TEST_CASE(
+  "load(path) with inline-only commands still works",
+  "[schema_loader][external]") {
+  TempDir dir("/tmp/jcmd_test_inline");
+
+  nlohmann::json root_json = {
+    {"name", "mytool"},
+    {"doc", {"A tool."}},
+    {"commands", {{{"name", "build"}, {"doc", {"Build stuff."}}}}}};
+
+  TempFile root_file("/tmp/jcmd_test_inline/mytool.json", root_json);
+
+  Loader loader;
+  auto root = loader.load(std::string("/tmp/jcmd_test_inline/mytool.json"));
+
+  REQUIRE(root.commands.has_value());
+  REQUIRE(root.commands->size() == 1);
+  REQUIRE((*root.commands)[0].name == "build");
+}
+
+TEST_CASE(
+  "load(path) mixes inline and external commands",
+  "[schema_loader][external]") {
+  TempDir dir("/tmp/jcmd_test_mixed");
+
+  nlohmann::json deploy_cmd = {
+    {"name", "deploy"}, {"doc", {"Deploy the app."}}};
+
+  TempFile deploy_file("/tmp/jcmd_test_mixed/deploy.json", deploy_cmd);
+
+  nlohmann::json root_json = {
+    {"name", "mytool"},
+    {"doc", {"A tool."}},
+    {"commands",
+     {{{"name", "build"}, {"doc", {"Build stuff."}}},
+      "deploy.json",
+      {{"name", "test"}, {"doc", {"Run tests."}}}}}};
+
+  TempFile root_file("/tmp/jcmd_test_mixed/mytool.json", root_json);
+
+  Loader loader;
+  auto root = loader.load(std::string("/tmp/jcmd_test_mixed/mytool.json"));
+
+  REQUIRE(root.commands.has_value());
+  REQUIRE(root.commands->size() == 3);
+  REQUIRE((*root.commands)[0].name == "build");
+  REQUIRE((*root.commands)[1].name == "deploy");
+  REQUIRE((*root.commands)[2].name == "test");
+}
+
+TEST_CASE(
+  "load(json) without file path ignores string command entries",
+  "[schema_loader][external]") {
+  Loader loader;
+  nlohmann::json root_json = {
+    {"name", "mytool"}, {"doc", {"A tool."}}, {"commands", {"deploy.json"}}};
+
+  // load(json) has no base path so it cannot resolve external refs;
+  // the string entry fails schema validation as expected
+  REQUIRE_THROWS_AS(loader.load(root_json), Error);
 }
