@@ -179,6 +179,7 @@ namespace json_commander::model {
   struct ManSection {
     std::string name;
     std::vector<ManBlock> blocks;
+    std::optional<std::string> after;
     bool
     operator==(const ManSection&) const = default;
   };

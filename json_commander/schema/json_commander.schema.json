@@ -422,6 +422,11 @@
           "description": "Content blocks within this section.",
           "type": "array",
           "items": { "$ref": "#/$defs/man_block" }
+        },
+        "after": {
+          "description": "Place this section immediately after the named section. Standard section names: NAME, SYNOPSIS, DESCRIPTION, COMMANDS, ARGUMENTS, OPTIONS, EXIT STATUS, ENVIRONMENT, SEE ALSO. If the named section does not exist, the section falls to the end.",
+          "type": "string",
+          "minLength": 1
         }
       },
       "additionalProperties": false

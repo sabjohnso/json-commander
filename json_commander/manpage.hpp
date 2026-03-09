@@ -544,7 +544,7 @@ namespace json_commander::manpage {
 
     std::vector<model::ManSection> sections;
     for (const auto& name : order) {
-      sections.push_back({name, groups[name]});
+      sections.push_back({name, groups[name], {}});
     }
     return sections;
   }
@@ -556,7 +556,7 @@ namespace json_commander::manpage {
   inline model::ManSection
   make_name_section(const std::string& name, const model::DocString& doc) {
     std::string first_line = doc.empty() ? "" : doc[0];
-    return {s_name, {model::ParagraphBlock{{name + " \\- " + first_line}}}};
+    return {s_name, {model::ParagraphBlock{{name + " \\- " + first_line}}}, {}};
   }
 
   inline model::ManSection
@@ -601,7 +601,7 @@ namespace json_commander::manpage {
     }
     if (has_commands) { synopsis += " COMMAND"; }
 
-    return {s_synopsis, {model::ParagraphBlock{{synopsis}}}};
+    return {s_synopsis, {model::ParagraphBlock{{synopsis}}}, {}};
   }
 
   inline model::ManSection
@@ -611,7 +611,7 @@ namespace json_commander::manpage {
       blocks.push_back(
         model::LabelTextBlock{"\\fB" + cmd.name + "\\fR", cmd.doc});
     }
-    return {s_commands, blocks};
+    return {s_commands, blocks, {}};
   }
 
   inline model::ManSection
@@ -625,7 +625,7 @@ namespace json_commander::manpage {
       }
       blocks.push_back(model::LabelTextBlock{label, e.doc});
     }
-    return {s_exit_status, blocks};
+    return {s_exit_status, blocks, {}};
   }
 
   inline model::ManSection
@@ -635,7 +635,7 @@ namespace json_commander::manpage {
       model::DocString doc = e.doc.value_or(model::DocString{});
       blocks.push_back(model::LabelTextBlock{"\\fB" + e.var + "\\fR", doc});
     }
-    return {s_environment, blocks};
+    return {s_environment, blocks, {}};
   }
 
   inline model::ManSection
@@ -646,7 +646,7 @@ namespace json_commander::manpage {
       text += "\\fB" + xrefs[i].name + "\\fR(" +
               std::to_string(xrefs[i].section) + ")";
     }
-    return {s_see_also, {model::ParagraphBlock{{text}}}};
+    return {s_see_also, {model::ParagraphBlock{{text}}}, {}};
   }
 
   // -------------------------------------------------------------------------
@@ -750,6 +750,25 @@ namespace json_commander::manpage {
       [](const std::string& a, const std::string& b) {
         return section_order(a) < section_order(b);
       });
+
+    // Reposition sections that have an "after" field
+    for (const auto& [name, sec] : section_map) {
+      if (!sec.after.has_value()) { continue; }
+      const auto& anchor = *sec.after;
+
+      auto anchor_it =
+        std::find(section_names.begin(), section_names.end(), anchor);
+      if (anchor_it == section_names.end()) { continue; }
+
+      auto self_it =
+        std::find(section_names.begin(), section_names.end(), name);
+      if (self_it == section_names.end()) { continue; }
+
+      section_names.erase(self_it);
+      // Re-find anchor after erase (iterator may be invalidated)
+      anchor_it = std::find(section_names.begin(), section_names.end(), anchor);
+      section_names.insert(anchor_it + 1, name);
+    }
 
     std::vector<model::ManSection> result;
     for (const auto& name : section_names) {

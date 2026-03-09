@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <json_commander/manpage.hpp>
+#include <json_commander/model_json.hpp>
 
 #include <sstream>
 #include <stdexcept>
@@ -93,6 +94,7 @@ TEST_CASE(
   model::ManSection section{
     "NAME",
     {model::ParagraphBlock{{"mytool \\- a test tool"}}},
+    {},
   };
   REQUIRE(
     groff::render_section(section) ==
@@ -507,7 +509,7 @@ TEST_CASE(
   root.doc = {"A test tool."};
   root.man = model::Man{};
   root.man->sections = std::vector<model::ManSection>{
-    {"DESCRIPTION", {model::ParagraphBlock{{"A longer description."}}}},
+    {"DESCRIPTION", {model::ParagraphBlock{{"A longer description."}}}, {}},
   };
 
   auto sections = assemble(root, root.name);
@@ -556,7 +558,7 @@ TEST_CASE("assemble for root with exits, envs, xrefs", "[manpage]") {
 
 TEST_CASE("render_page starts with .TH header", "[manpage]") {
   std::vector<model::ManSection> sections = {
-    {"NAME", {model::ParagraphBlock{{"mytool \\- a tool"}}}},
+    {"NAME", {model::ParagraphBlock{{"mytool \\- a tool"}}}, {}},
   };
   auto page = groff::render_page("mytool", 1, "1.0.0", sections);
   REQUIRE(page.find(".TH") == 0);
@@ -668,7 +670,8 @@ TEST_CASE(
   root.man->xrefs = std::vector<model::ManXref>{{"git", 1}};
   root.man->sections = std::vector<model::ManSection>{
     {"DESCRIPTION",
-     {model::ParagraphBlock{{"A longer description of mytool."}}}},
+     {model::ParagraphBlock{{"A longer description of mytool."}}},
+     {}},
   };
 
   auto output = to_groff(root);
@@ -852,6 +855,7 @@ TEST_CASE(
   model::ManSection section{
     "OPTIONS",
     {model::LabelTextBlock{"\\fB\\-\\-verbose\\fR", {"Be verbose."}}},
+    {},
   };
   auto output = plain::render_section(section);
   REQUIRE(output.find("OPTIONS\n") == 0);
@@ -1060,6 +1064,7 @@ TEST_CASE("ansi::render_section wraps header in ANSI bold", "[manpage][ansi]") {
   model::ManSection section{
     "OPTIONS",
     {model::LabelTextBlock{"\\fB\\-\\-verbose\\fR", {"Be verbose."}}},
+    {},
   };
   auto output = ansi::render_section(section);
   REQUIRE(output.find("\033[1mOPTIONS\033[0m\n") == 0);
@@ -1070,8 +1075,10 @@ TEST_CASE(
   "ansi::render_page produces all sections with ANSI bold headers",
   "[manpage][ansi]") {
   std::vector<model::ManSection> sections = {
-    {"NAME", {model::ParagraphBlock{{"mytool \\- a tool"}}}},
-    {"OPTIONS", {model::LabelTextBlock{"\\fB\\-\\-help\\fR", {"Show help."}}}},
+    {"NAME", {model::ParagraphBlock{{"mytool \\- a tool"}}}, {}},
+    {"OPTIONS",
+     {model::LabelTextBlock{"\\fB\\-\\-help\\fR", {"Show help."}}},
+     {}},
   };
   auto output = ansi::render_page("mytool", sections);
   REQUIRE(output.find("\033[1mNAME\033[0m\n") != std::string::npos);
@@ -1420,4 +1427,182 @@ TEST_CASE(
   auto output = to_ansi_text(root, {"build"});
   REQUIRE(output.find("SEE ALSO") != std::string::npos);
   REQUIRE(output.find("\033[1mmytool\033[0m(1)") != std::string::npos);
+}
+
+// ---------------------------------------------------------------------------
+// Phase 16: User-controllable section ordering via "after"
+// ---------------------------------------------------------------------------
+
+TEST_CASE(
+  "custom section with after field is placed after the named section",
+  "[manpage][after]") {
+  model::Root root{};
+  root.name = "mytool";
+  root.doc = {"A test tool."};
+  root.version = "1.0.0";
+  root.envs = std::vector<model::EnvInfo>{{"MYTOOL_HOME", {{"Home dir."}}}};
+
+  model::ManSection history{};
+  history.name = "HISTORY";
+  history.after = "ENVIRONMENT";
+  history.blocks = {model::ParagraphBlock{{"First released in 2024."}}};
+
+  root.man = model::Man{};
+  root.man->sections = std::vector<model::ManSection>{history};
+
+  auto output = to_groff(root);
+  auto env_pos = output.find(".SH ENVIRONMENT");
+  auto history_pos = output.find(".SH HISTORY");
+  auto see_pos = output.find(".SH SEE ALSO");
+  REQUIRE(env_pos != std::string::npos);
+  REQUIRE(history_pos != std::string::npos);
+  // HISTORY should appear after ENVIRONMENT but before SEE ALSO
+  REQUIRE(history_pos > env_pos);
+  // If SEE ALSO exists, HISTORY should precede it
+  if (see_pos != std::string::npos) { REQUIRE(history_pos < see_pos); }
+}
+
+TEST_CASE(
+  "custom section without after field sorts after standard sections",
+  "[manpage][after]") {
+  model::Root root{};
+  root.name = "mytool";
+  root.doc = {"A test tool."};
+  root.version = "1.0.0";
+  root.envs = std::vector<model::EnvInfo>{{"MYTOOL_HOME", {{"Home dir."}}}};
+
+  model::ManSection notes{};
+  notes.name = "NOTES";
+  notes.blocks = {model::ParagraphBlock{{"Some notes."}}};
+
+  root.man = model::Man{};
+  root.man->sections = std::vector<model::ManSection>{notes};
+
+  auto output = to_groff(root);
+  auto env_pos = output.find(".SH ENVIRONMENT");
+  auto notes_pos = output.find(".SH NOTES");
+  REQUIRE(env_pos != std::string::npos);
+  REQUIRE(notes_pos != std::string::npos);
+  // Without after, NOTES goes after all standard sections
+  REQUIRE(notes_pos > env_pos);
+}
+
+TEST_CASE(
+  "custom section with after naming non-existent section falls to end",
+  "[manpage][after]") {
+  model::Root root{};
+  root.name = "mytool";
+  root.doc = {"A test tool."};
+  root.version = "1.0.0";
+
+  model::ManSection notes{};
+  notes.name = "NOTES";
+  notes.after = "NONEXISTENT";
+  notes.blocks = {model::ParagraphBlock{{"Some notes."}}};
+
+  root.man = model::Man{};
+  root.man->sections = std::vector<model::ManSection>{notes};
+
+  auto output = to_groff(root);
+  auto notes_pos = output.find(".SH NOTES");
+  REQUIRE(notes_pos != std::string::npos);
+}
+
+TEST_CASE(
+  "multiple custom sections with after placed relative to different anchors",
+  "[manpage][after]") {
+  model::Root root{};
+  root.name = "mytool";
+  root.doc = {"A test tool."};
+  root.version = "1.0.0";
+  root.envs = std::vector<model::EnvInfo>{{"MYTOOL_HOME", {{"Home dir."}}}};
+
+  model::ManSection description{};
+  description.name = "DESCRIPTION";
+  description.blocks = {model::ParagraphBlock{{"A longer description."}}};
+
+  model::ManSection bugs{};
+  bugs.name = "BUGS";
+  bugs.after = "DESCRIPTION";
+  bugs.blocks = {model::ParagraphBlock{{"No known bugs."}}};
+
+  model::ManSection history{};
+  history.name = "HISTORY";
+  history.after = "ENVIRONMENT";
+  history.blocks = {model::ParagraphBlock{{"First released in 2024."}}};
+
+  root.man = model::Man{};
+  root.man->sections =
+    std::vector<model::ManSection>{description, bugs, history};
+
+  auto output = to_groff(root);
+  auto desc_pos = output.find(".SH DESCRIPTION");
+  auto bugs_pos = output.find(".SH BUGS");
+  auto env_pos = output.find(".SH ENVIRONMENT");
+  auto history_pos = output.find(".SH HISTORY");
+
+  REQUIRE(desc_pos != std::string::npos);
+  REQUIRE(bugs_pos != std::string::npos);
+  REQUIRE(env_pos != std::string::npos);
+  REQUIRE(history_pos != std::string::npos);
+
+  // BUGS right after DESCRIPTION, before ENVIRONMENT
+  REQUIRE(bugs_pos > desc_pos);
+  REQUIRE(bugs_pos < env_pos);
+
+  // HISTORY right after ENVIRONMENT
+  REQUIRE(history_pos > env_pos);
+}
+
+TEST_CASE("plain text rendering respects after ordering", "[manpage][after]") {
+  model::Root root{};
+  root.name = "mytool";
+  root.doc = {"A test tool."};
+  root.version = "1.0.0";
+  root.envs = std::vector<model::EnvInfo>{{"MYTOOL_HOME", {{"Home dir."}}}};
+
+  model::ManSection history{};
+  history.name = "HISTORY";
+  history.after = "ENVIRONMENT";
+  history.blocks = {model::ParagraphBlock{{"First released in 2024."}}};
+
+  root.man = model::Man{};
+  root.man->sections = std::vector<model::ManSection>{history};
+
+  auto output = to_plain_text(root);
+  auto env_pos = output.find("ENVIRONMENT\n");
+  auto history_pos = output.find("HISTORY\n");
+  REQUIRE(env_pos != std::string::npos);
+  REQUIRE(history_pos != std::string::npos);
+  REQUIRE(history_pos > env_pos);
+}
+
+TEST_CASE(
+  "ManSection after field round-trips through JSON", "[manpage][after]") {
+  model::ManSection section{};
+  section.name = "HISTORY";
+  section.after = "ENVIRONMENT";
+  section.blocks = {model::ParagraphBlock{{"Some history."}}};
+
+  nlohmann::json j = section;
+  auto roundtripped = j.get<model::ManSection>();
+
+  REQUIRE(roundtripped.name == "HISTORY");
+  REQUIRE(roundtripped.after.has_value());
+  REQUIRE(*roundtripped.after == "ENVIRONMENT");
+  REQUIRE(roundtripped.blocks.size() == 1);
+}
+
+TEST_CASE(
+  "ManSection without after field has nullopt after JSON round-trip",
+  "[manpage][after]") {
+  model::ManSection section{};
+  section.name = "DESCRIPTION";
+  section.blocks = {model::ParagraphBlock{{"Some text."}}};
+
+  nlohmann::json j = section;
+  auto roundtripped = j.get<model::ManSection>();
+
+  REQUIRE(roundtripped.name == "DESCRIPTION");
+  REQUIRE_FALSE(roundtripped.after.has_value());
 }

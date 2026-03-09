@@ -650,7 +650,7 @@ TEST_CASE("Man round-trip", "[model][man]") {
     Man m;
     m.section = 1;
     m.sections = std::vector<ManSection>{{
-      ManSection{"DESCRIPTION", {ParagraphBlock{{"A tool."}}}},
+      ManSection{"DESCRIPTION", {ParagraphBlock{{"A tool."}}}, {}},
     }};
     m.xrefs = std::vector<ManXref>{{"git", 1}};
     round_trip(m);

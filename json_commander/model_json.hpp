@@ -526,12 +526,14 @@ namespace json_commander::model {
     j = nlohmann::json::object();
     j["name"] = s.name;
     j["blocks"] = s.blocks;
+    if (s.after.has_value()) { j["after"] = *s.after; }
   }
 
   inline void
   from_json(const nlohmann::json& j, ManSection& s) {
     j.at("name").get_to(s.name);
     j.at("blocks").get_to(s.blocks);
+    if (j.contains("after")) { s.after = j.at("after").get<std::string>(); }
   }
 
   // ---------------------------------------------------------------------------
