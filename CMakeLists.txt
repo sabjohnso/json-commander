@@ -22,7 +22,8 @@ endif()
 list(INSERT CMAKE_MODULE_PATH 0 ${PROJECT_SOURCE_DIR}/cmake)
 include(json_commander_deps)
 
-set(json_commander_TEMPLATE_DIR "${PROJECT_SOURCE_DIR}/cmake")
+set(json_commander_TEMPLATE_DIR "${PROJECT_SOURCE_DIR}/cmake" CACHE INTERNAL
+  "Path to json-commander CMake templates and scripts")
 include(json_commander_add_executable)
 
 add_subdirectory(json_commander)
