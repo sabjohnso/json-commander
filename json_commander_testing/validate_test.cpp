@@ -85,11 +85,13 @@ TEST_CASE("required has description 'required'", "[validate]") {
 
 namespace {
 
+  const std::string known_dir = std::filesystem::canonical("/tmp").string();
+
   struct TempFile {
     std::string path;
 
     TempFile()
-        : path("/tmp/commander_validate_test_file") {
+        : path(known_dir + "/commander_validate_test_file") {
       std::ofstream ofs(path);
       ofs << "test";
     }
@@ -97,8 +99,8 @@ namespace {
     ~TempFile() { std::remove(path.c_str()); }
   };
 
-  const std::string absent_path = "/tmp/commander_nonexistent_xyz_abc_123";
-  const std::string known_dir = "/tmp";
+  const std::string absent_path =
+    known_dir + "/commander_nonexistent_xyz_abc_123";
 
 } // namespace
 
