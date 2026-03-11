@@ -11,6 +11,7 @@
 #include <json_commander/completion.hpp>
 #include <json_commander/config_schema.hpp>
 #include <json_commander/manpage.hpp>
+#include <json_commander/model_emit.hpp>
 #include <json_commander/parse.hpp>
 #include <json_commander/run.hpp>
 #include <json_commander/schema_loader.hpp>
@@ -118,6 +119,17 @@ do_help(const nlohmann::json& config) {
 }
 
 int
+do_codegen(const nlohmann::json& config) {
+  auto schema_file = config.at("schema-file").get<std::string>();
+  auto fn_name = config.at("function-name").get<std::string>();
+
+  schema::Loader loader;
+  auto root = loader.load(schema_file);
+  std::cout << model_emit::emit_model_hpp(root, fn_name);
+  return 0;
+}
+
+int
 do_man(const nlohmann::json& config) {
   auto schema_file = config.at("schema-file").get<std::string>();
 
@@ -145,6 +157,7 @@ dispatch(const parse::ParseOk& ok) {
   if (command == "parse") return do_parse(ok.config);
   if (command == "help") return do_help(ok.config);
   if (command == "man") return do_man(ok.config);
+  if (command == "codegen") return do_codegen(ok.config);
 
   std::cerr << "unknown command: " << command << "\n";
   return 1;

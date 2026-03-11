@@ -185,31 +185,34 @@ TEST_CASE("run: json string overload parse ok", "[run]") {
   REQUIRE(captured["output"] == "bar.txt");
 }
 
-TEST_CASE("run: invalid schema returns 1", "[run]") {
+TEST_CASE("run: invalid schema throws", "[run]") {
   Argv args{"test-app"};
 
   bool called = false;
-  int rc = json_commander::run(
-    std::string("{}"), args.argc(), args.argv(), [&](const json&) {
-      called = true;
-      return 0;
-    });
-
-  REQUIRE(rc == 1);
+  REQUIRE_THROWS([&] {
+    json_commander::run(
+      std::string("{}"), args.argc(), args.argv(), [&](const json&) {
+        called = true;
+        return 0;
+      });
+  }());
   REQUIRE_FALSE(called);
 }
 
-TEST_CASE("run: bad json returns 1", "[run]") {
+TEST_CASE("run: bad json throws", "[run]") {
   Argv args{"test-app"};
 
   bool called = false;
-  int rc = json_commander::run(
-    std::string("not json"), args.argc(), args.argv(), [&](const json&) {
-      called = true;
-      return 0;
-    });
-
-  REQUIRE(rc == 1);
+  REQUIRE_THROWS_AS(
+    json_commander::run(
+      std::string("not json"),
+      args.argc(),
+      args.argv(),
+      [&](const json&) {
+        called = true;
+        return 0;
+      }),
+    nlohmann::json::exception);
   REQUIRE_FALSE(called);
 }
 

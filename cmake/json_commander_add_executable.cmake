@@ -46,7 +46,7 @@ endfunction()
 
 function(json_commander_add_executable name)
   cmake_parse_arguments(JCMD
-    "WIN32;MACOSX_BUNDLE;EXCLUDE_FROM_ALL;NO_INSTALL"
+    "WIN32;MACOSX_BUNDLE;EXCLUDE_FROM_ALL;NO_INSTALL;PARSE_JSON"
     "SCHEMA;MAIN;FROM_HEADER"
     ""
     ${ARGN})
@@ -67,17 +67,31 @@ function(json_commander_add_executable name)
 
   set(JCMD_MAIN_FN "${JCMD_MAIN}")
 
-  # Read schema content for embedding into the executable
+  # Read schema content (needed for subcommand collection in both modes)
   get_filename_component(_schema_abs "${JCMD_SCHEMA}" ABSOLUTE)
   file(READ "${_schema_abs}" JCMD_SCHEMA_CONTENT)
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_schema_abs}")
 
-  # Generate main.cpp via configure_file
-  set(_generated_main "${CMAKE_CURRENT_BINARY_DIR}/${name}_jcmd_main.cpp")
-  configure_file(
-    "${json_commander_TEMPLATE_DIR}/json_commander_main.cpp.in"
-    "${_generated_main}"
-    @ONLY)
+  if(JCMD_PARSE_JSON)
+    # Legacy mode: embed JSON as a string literal, parse at runtime
+    set(_generated_main "${CMAKE_CURRENT_BINARY_DIR}/${name}_jcmd_main.cpp")
+    configure_file(
+      "${json_commander_TEMPLATE_DIR}/json_commander_main.cpp.in"
+      "${_generated_main}"
+      @ONLY)
+  else()
+    # Default mode: generate C++ model construction via codegen
+    set(_model_header_name "${name}_jcmd_model.hpp")
+    set(_model_header "${CMAKE_CURRENT_BINARY_DIR}/${_model_header_name}")
+    set(JCMD_MODEL_HEADER "${_model_header_name}")
+    set(JCMD_MODEL_FN "jcmd_make_root")
+
+    set(_generated_main "${CMAKE_CURRENT_BINARY_DIR}/${name}_jcmd_main.cpp")
+    configure_file(
+      "${json_commander_TEMPLATE_DIR}/json_commander_model_main.cpp.in"
+      "${_generated_main}"
+      @ONLY)
+  endif()
 
   # Build add_executable flags
   set(_exe_flags)
@@ -105,6 +119,28 @@ function(json_commander_add_executable name)
 
   # Ensure FROM_HEADER can be found relative to the caller's source dir
   target_include_directories(${name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+
+  if(NOT JCMD_PARSE_JSON)
+    # Add codegen custom command: generates the model header at build time
+    set(_codegen_script "${json_commander_TEMPLATE_DIR}/json_commander_generate_codegen.cmake")
+
+    add_custom_command(
+      OUTPUT "${_model_header}"
+      COMMAND ${CMAKE_COMMAND}
+        -DJCMD_EXECUTABLE=$<TARGET_FILE:json-commander>
+        -DJCMD_SCHEMA_FILE=${_schema_abs}
+        -DJCMD_OUTPUT_FILE=${_model_header}
+        -DJCMD_FUNCTION_NAME=${JCMD_MODEL_FN}
+        -P "${_codegen_script}"
+      DEPENDS json-commander "${_schema_abs}"
+      COMMENT "Generating model header for ${name}")
+
+    add_custom_target(${name}_codegen DEPENDS "${_model_header}")
+    add_dependencies(${name} ${name}_codegen)
+
+    # The generated header lives in the binary dir
+    target_include_directories(${name} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+  endif()
 
   if(NOT JCMD_NO_INSTALL)
     include(GNUInstallDirs)

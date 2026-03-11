@@ -39,9 +39,23 @@ namespace json_commander::model {
 
   inline void
   to_json(nlohmann::json& j, const ScalarType& s) {
-    static const char* names[] = {
-      "string", "int", "float", "bool", "enum", "file", "dir", "path"};
-    j = names[static_cast<int>(s)];
+    static const std::pair<ScalarType, const char*> table[] = {
+      {ScalarType::String, "string"},
+      {ScalarType::Int, "int"},
+      {ScalarType::Float, "float"},
+      {ScalarType::Bool, "bool"},
+      {ScalarType::Enum, "enum"},
+      {ScalarType::File, "file"},
+      {ScalarType::Dir, "dir"},
+      {ScalarType::Path, "path"},
+    };
+    for (const auto& [val, name] : table) {
+      if (val == s) {
+        j = name;
+        return;
+      }
+    }
+    throw std::invalid_argument("unknown scalar type");
   }
 
   inline void

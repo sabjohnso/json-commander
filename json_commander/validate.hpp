@@ -39,13 +39,33 @@ namespace json_commander::validate {
     };
   }
 
+  // Note on TOCTOU: These validators check filesystem state at parse time.
+  // The checked path may change between validation and actual use by the
+  // application. For security-sensitive applications, open files immediately
+  // after parsing and use the resulting file descriptor rather than the path.
+
+  namespace detail {
+
+    inline void
+    reject_symlink(const std::string& name, const std::filesystem::path& p) {
+      std::error_code ec;
+      auto status = std::filesystem::symlink_status(p, ec);
+      if (!ec && status.type() == std::filesystem::file_type::symlink) {
+        throw Error(name + ": " + p.string() + " is a symbolic link");
+      }
+    }
+
+  } // namespace detail
+
   inline Validator
   must_exist_file() {
     return {
       [](const std::string& name, const std::optional<nlohmann::json>& value) {
         if (!value.has_value()) { return; }
         auto path = value->get<std::string>();
-        if (!std::filesystem::is_regular_file(path)) {
+        detail::reject_symlink(name, path);
+        if (!std::filesystem::is_regular_file(
+              std::filesystem::symlink_status(path))) {
           throw Error(name + ": " + path + " is not a regular file");
         }
       },
@@ -59,7 +79,9 @@ namespace json_commander::validate {
       [](const std::string& name, const std::optional<nlohmann::json>& value) {
         if (!value.has_value()) { return; }
         auto path = value->get<std::string>();
-        if (!std::filesystem::is_directory(path)) {
+        detail::reject_symlink(name, path);
+        if (!std::filesystem::is_directory(
+              std::filesystem::symlink_status(path))) {
           throw Error(name + ": " + path + " is not a directory");
         }
       },
@@ -73,7 +95,8 @@ namespace json_commander::validate {
       [](const std::string& name, const std::optional<nlohmann::json>& value) {
         if (!value.has_value()) { return; }
         auto path = value->get<std::string>();
-        if (!std::filesystem::exists(path)) {
+        detail::reject_symlink(name, path);
+        if (!std::filesystem::exists(std::filesystem::symlink_status(path))) {
           throw Error(name + ": " + path + " does not exist");
         }
       },
@@ -160,9 +183,26 @@ namespace json_commander::validate {
       std::size_t index,
       model::ScalarType type) {
       auto v = must_exist_for_scalar(type);
-      if (v.has_value()) {
-        auto elem = std::optional<nlohmann::json>(arr[index]);
-        v->check(name + "[" + std::to_string(index) + "]", elem);
+      if (!v.has_value()) { return; }
+      if (!arr.is_array() || index >= arr.size()) {
+        throw validate::Error(
+          name + ": expected array with at least " + std::to_string(index + 1) +
+          " elements");
+      }
+      auto elem = std::optional<nlohmann::json>(arr[index]);
+      v->check(name + "[" + std::to_string(index) + "]", elem);
+    }
+
+    inline void
+    check_array_size(
+      const std::string& name,
+      const nlohmann::json& arr,
+      std::size_t expected) {
+      if (!arr.is_array() || arr.size() != expected) {
+        throw validate::Error(
+          name + ": expected array of " + std::to_string(expected) +
+          " elements, got " +
+          (arr.is_array() ? std::to_string(arr.size()) : "non-array"));
       }
     }
 
@@ -175,6 +215,7 @@ namespace json_commander::validate {
         [pt](
           const std::string& name, const std::optional<nlohmann::json>& value) {
           if (!value.has_value()) { return; }
+          check_array_size(name, *value, 2);
           check_element_at(name, *value, 0, pt.first);
           check_element_at(name, *value, 1, pt.second);
         },
@@ -192,6 +233,7 @@ namespace json_commander::validate {
         [tt](
           const std::string& name, const std::optional<nlohmann::json>& value) {
           if (!value.has_value()) { return; }
+          check_array_size(name, *value, 3);
           check_element_at(name, *value, 0, tt.first);
           check_element_at(name, *value, 1, tt.second);
           check_element_at(name, *value, 2, tt.third);

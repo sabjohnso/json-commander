@@ -226,6 +226,23 @@ TEST_CASE("list_conv propagates element parse error", "[conv]") {
   REQUIRE_THROWS_AS(c.parse("1,abc"), Error);
 }
 
+TEST_CASE("list_conv enforces max element count", "[conv]") {
+  auto c = list_conv(int_conv(), ",", 3);
+  REQUIRE_NOTHROW(c.parse("1,2,3"));
+  REQUIRE_THROWS_AS(c.parse("1,2,3,4"), Error);
+}
+
+TEST_CASE("list_conv uses default max element limit", "[conv]") {
+  auto c = list_conv(int_conv(), ",");
+  // Default limit should be large enough for normal use
+  std::string input;
+  for (int i = 0; i < 100; ++i) {
+    if (i > 0) input += ",";
+    input += std::to_string(i);
+  }
+  REQUIRE_NOTHROW(c.parse(input));
+}
+
 TEST_CASE("list_conv formats array", "[conv]") {
   auto c = list_conv(int_conv(), ",");
   REQUIRE(c.format(json({1, 2, 3})) == "1,2,3");

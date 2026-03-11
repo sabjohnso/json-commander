@@ -127,11 +127,16 @@ namespace json_commander {
       schema::Loader loader;
       auto j = nlohmann::json::parse(cli_json);
       root = loader.load(j);
-    } catch (...) {
+    } catch (const nlohmann::json::exception& e) {
       std::cerr << name
                 << ": invalid CLI definition. Use json-commander validate to "
                    "check your schema.\n";
-      return 1;
+      throw;
+    } catch (const schema::Error& e) {
+      std::cerr << name
+                << ": invalid CLI definition. Use json-commander validate to "
+                   "check your schema.\n";
+      throw;
     }
 
     return run(root, argc, argv, std::move(main_fn));
@@ -154,11 +159,16 @@ namespace json_commander {
     try {
       schema::Loader loader;
       root = loader.load(schema_path.string());
-    } catch (...) {
+    } catch (const nlohmann::json::exception& e) {
       std::cerr << name
                 << ": invalid CLI definition. Use json-commander validate to "
                    "check your schema.\n";
-      return 1;
+      throw;
+    } catch (const schema::Error& e) {
+      std::cerr << name
+                << ": invalid CLI definition. Use json-commander validate to "
+                   "check your schema.\n";
+      throw;
     }
 
     return run(root, argc, argv, std::move(main_fn));

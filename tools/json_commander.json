@@ -95,6 +95,26 @@
           "repeated": true
         }
       ]
+    },
+    {
+      "name": "codegen",
+      "doc": ["Generate a C++ header that constructs a model::Root without JSON parsing."],
+      "args": [
+        {
+          "kind": "positional",
+          "name": "schema-file",
+          "doc": ["Path to the json-commander schema file."],
+          "type": "string",
+          "required": true
+        },
+        {
+          "kind": "option",
+          "names": ["function-name", "f"],
+          "doc": ["Name of the generated function."],
+          "type": "string",
+          "default": "jcmd_make_root"
+        }
+      ]
     }
   ]
 }

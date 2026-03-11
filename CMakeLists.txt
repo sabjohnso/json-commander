@@ -70,7 +70,9 @@ install(FILES
 
 install(FILES
   cmake/json_commander_add_executable.cmake
+  cmake/json_commander_generate_codegen.cmake
   cmake/json_commander_generate_completion.cmake
   cmake/json_commander_generate_manpage.cmake
   cmake/json_commander_main.cpp.in
+  cmake/json_commander_model_main.cpp.in
   DESTINATION ${json_commander_INSTALL_CONFDIR})

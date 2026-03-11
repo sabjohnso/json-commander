@@ -67,7 +67,11 @@ namespace json_commander::conv {
         double value = 0;
         try {
           value = std::stod(s, &pos);
-        } catch (...) { throw Error("expected float, got '" + s + "'"); }
+        } catch (const std::invalid_argument&) {
+          throw Error("expected float, got '" + s + "'");
+        } catch (const std::out_of_range&) {
+          throw Error("float value out of range: '" + s + "'");
+        }
         if (pos != s.size()) { throw Error("expected float, got '" + s + "'"); }
         return value;
       },
@@ -179,11 +183,20 @@ namespace json_commander::conv {
   // -------------------------------------------------------------------------
 
   inline Converter
-  list_conv(Converter element, const std::string& separator = ",") {
+  list_conv(
+    Converter element,
+    const std::string& separator = ",",
+    std::size_t max_elements = 10000) {
     return {
-      [element, separator](const std::string& s) -> nlohmann::json {
+      [element, separator, max_elements](
+        const std::string& s) -> nlohmann::json {
         if (s.empty()) return nlohmann::json::array();
         auto parts = detail::split(s, separator);
+        if (parts.size() > max_elements) {
+          throw Error(
+            "list exceeds maximum element count (" +
+            std::to_string(max_elements) + ")");
+        }
         auto result = nlohmann::json::array();
         for (const auto& part : parts) {
           result.push_back(element.parse(part));
