@@ -50,6 +50,11 @@ if(json_commander_BUILD_TOOLS)
   add_subdirectory(tools)
 endif()
 
+option(json_commander_BUILD_WASM "Build the json-commander WebAssembly module" OFF)
+if(json_commander_BUILD_WASM OR EMSCRIPTEN)
+  add_subdirectory(json_commander_wasm)
+endif()
+
 install(EXPORT json_commander_EXPORTS
   NAMESPACE json_commander::
   FILE json-commander-exports.cmake

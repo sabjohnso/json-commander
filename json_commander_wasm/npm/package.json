@@ -1,0 +1,19 @@
+{
+  "name": "@json-commander/wasm",
+  "version": "0.1.0",
+  "description": "JSON Commander CLI definition toolkit compiled to WebAssembly",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "json_commander_wasm.js",
+    "json_commander_wasm.wasm"
+  ],
+  "scripts": {
+    "test": "node test.mjs",
+    "test:conformance": "node conformance.mjs"
+  },
+  "license": "MIT"
+}
