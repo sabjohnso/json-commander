@@ -82,6 +82,62 @@ jobs:
       - name: Test
         run: ctest --test-dir build -C ${{ matrix.config }} --output-on-failure
 
+  build-wasm:
+    name: WebAssembly (Emscripten)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 'latest'
+
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+
+      - name: Build Wasm module
+        run: |
+          emcmake cmake -B build-wasm -DCMAKE_BUILD_TYPE=Release \
+            -Djson_commander_BUILD_TESTING=OFF \
+            -Djson_commander_BUILD_EXAMPLES=OFF \
+            -Djson_commander_BUILD_TOOLS=OFF \
+            -Djson_commander_BUILD_C_API=OFF
+          cmake --build build-wasm
+
+      - name: Copy Wasm artifacts
+        run: |
+          cp build-wasm/json_commander_wasm/json_commander_wasm.js \
+             build-wasm/json_commander_wasm/json_commander_wasm.wasm \
+             json_commander_wasm/npm/
+
+      - name: Run smoke tests
+        run: node json_commander_wasm/npm/test.mjs
+
+      - name: Build native tool (for conformance tests)
+        run: |
+          cmake -G "Ninja Multi-Config" -B build-native \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -Djson_commander_BUILD_TESTING=OFF \
+            -Djson_commander_BUILD_EXAMPLES=OFF \
+            -Djson_commander_BUILD_C_API=OFF
+          cmake --build build-native --config Release --target json-commander
+
+      - name: Run conformance tests
+        run: |
+          JCMD_NATIVE=build-native/tools/Release/json-commander \
+            node json_commander_wasm/npm/conformance.mjs
+
+      - name: Report Wasm binary size
+        run: |
+          echo "Raw:    $(stat -c%s build-wasm/json_commander_wasm/json_commander_wasm.wasm) bytes"
+          gzip -k build-wasm/json_commander_wasm/json_commander_wasm.wasm
+          echo "Gzipped: $(stat -c%s build-wasm/json_commander_wasm/json_commander_wasm.wasm.gz) bytes"
+
   build-macos:
     name: macOS apple-clang / ${{ matrix.config }}
     runs-on: macos-14
