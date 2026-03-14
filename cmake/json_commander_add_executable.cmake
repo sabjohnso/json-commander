@@ -135,8 +135,9 @@ function(json_commander_add_executable name)
       DEPENDS json-commander "${_schema_abs}"
       COMMENT "Generating model header for ${name}")
 
-    add_custom_target(${name}_codegen DEPENDS "${_model_header}")
-    add_dependencies(${name} ${name}_codegen)
+    # Add the generated header as a source so CMake tracks the file-level
+    # dependency directly — no always-dirty custom target needed.
+    target_sources(${name} PRIVATE "${_model_header}")
 
     # The generated header lives in the binary dir
     target_include_directories(${name} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
@@ -154,7 +155,8 @@ function(json_commander_add_executable name)
     set(_man_script "${json_commander_TEMPLATE_DIR}/json_commander_generate_manpage.cmake")
     set(_exe_base_name "$<TARGET_FILE_BASE_NAME:${name}>")
 
-    # Man page generation — root command
+    # Man page generation — collect output filenames and commands
+    set(_man_outputs "${_gen_dir}/${name}.1")
     set(_man_commands
       COMMAND ${CMAKE_COMMAND}
         -DJCMD_EXECUTABLE=$<TARGET_FILE:${name}>
@@ -173,6 +175,7 @@ function(json_commander_add_executable name)
       foreach(_idx RANGE 0 ${_subcmd_last})
         list(GET _subcmd_names ${_idx} _sname)
         list(GET _subcmd_args ${_idx} _sargs)
+        list(APPEND _man_outputs "${_gen_dir}/${name}-${_sname}.1")
         list(APPEND _man_commands
           COMMAND ${CMAKE_COMMAND}
             -DJCMD_EXECUTABLE=$<TARGET_FILE:${name}>
@@ -184,10 +187,13 @@ function(json_commander_add_executable name)
       endforeach()
     endif()
 
-    add_custom_target(${name}_manpage ALL
+    add_custom_command(
+      OUTPUT ${_man_outputs}
       ${_man_commands}
       DEPENDS ${name}
       COMMENT "Generating man pages for ${name}")
+
+    add_custom_target(${name}_manpage ALL DEPENDS ${_man_outputs})
 
     install(CODE "
       file(GLOB _manpages \"${_gen_dir}/*.1\")
@@ -200,7 +206,13 @@ function(json_commander_add_executable name)
     # Shell completion generation and installation
     set(_comp_script "${json_commander_TEMPLATE_DIR}/json_commander_generate_completion.cmake")
 
-    add_custom_target(${name}_completions ALL
+    set(_comp_outputs
+      "${_gen_dir}/${name}.bash"
+      "${_gen_dir}/_${name}"
+      "${_gen_dir}/${name}.fish")
+
+    add_custom_command(
+      OUTPUT ${_comp_outputs}
       COMMAND ${CMAKE_COMMAND}
         -DJCMD_EXECUTABLE=$<TARGET_FILE:${name}>
         -DJCMD_SHELL=bash
@@ -221,6 +233,8 @@ function(json_commander_add_executable name)
         -P "${_comp_script}"
       DEPENDS ${name}
       COMMENT "Generating shell completions for ${name}")
+
+    add_custom_target(${name}_completions ALL DEPENDS ${_comp_outputs})
 
     install(CODE "
       file(GLOB _bash_comps \"${_gen_dir}/*.bash\")

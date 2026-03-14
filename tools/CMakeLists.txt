@@ -25,7 +25,8 @@ set(_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/json-commander_generated")
 set(_man_script "${json_commander_TEMPLATE_DIR}/json_commander_generate_manpage.cmake")
 set(_exe_base_name "$<TARGET_FILE_BASE_NAME:json-commander>")
 
-# Man page generation — root command
+# Man page generation — collect output filenames and commands
+set(_man_outputs "${_gen_dir}/json-commander.1")
 set(_man_commands
   COMMAND ${CMAKE_COMMAND}
     -DJCMD_EXECUTABLE=$<TARGET_FILE:json-commander>
@@ -45,6 +46,7 @@ if(_subcmd_count GREATER 0)
   foreach(_idx RANGE 0 ${_subcmd_last})
     list(GET _subcmd_names ${_idx} _sname)
     list(GET _subcmd_args ${_idx} _sargs)
+    list(APPEND _man_outputs "${_gen_dir}/json-commander-${_sname}.1")
     list(APPEND _man_commands
       COMMAND ${CMAKE_COMMAND}
         -DJCMD_EXECUTABLE=$<TARGET_FILE:json-commander>
@@ -56,10 +58,13 @@ if(_subcmd_count GREATER 0)
   endforeach()
 endif()
 
-add_custom_target(json-commander_manpage ALL
+add_custom_command(
+  OUTPUT ${_man_outputs}
   ${_man_commands}
   DEPENDS json-commander
   COMMENT "Generating man pages for json-commander")
+
+add_custom_target(json-commander_manpage ALL DEPENDS ${_man_outputs})
 
 install(CODE "
   file(GLOB _manpages \"${_gen_dir}/*.1\")
@@ -72,7 +77,13 @@ install(CODE "
 # Shell completion generation and installation
 set(_comp_script "${json_commander_TEMPLATE_DIR}/json_commander_generate_completion.cmake")
 
-add_custom_target(json-commander_completions ALL
+set(_comp_outputs
+  "${_gen_dir}/json-commander.bash"
+  "${_gen_dir}/_json-commander"
+  "${_gen_dir}/json-commander.fish")
+
+add_custom_command(
+  OUTPUT ${_comp_outputs}
   COMMAND ${CMAKE_COMMAND}
     -DJCMD_EXECUTABLE=$<TARGET_FILE:json-commander>
     -DJCMD_SHELL=bash
@@ -93,6 +104,8 @@ add_custom_target(json-commander_completions ALL
     -P "${_comp_script}"
   DEPENDS json-commander
   COMMENT "Generating shell completions for json-commander")
+
+add_custom_target(json-commander_completions ALL DEPENDS ${_comp_outputs})
 
 install(CODE "
   file(GLOB _bash_comps \"${_gen_dir}/*.bash\")
