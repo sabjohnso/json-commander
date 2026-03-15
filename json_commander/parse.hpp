@@ -434,9 +434,8 @@ namespace json_commander::parse {
               }
 
               auto& sub_ok = std::get<LevelOk>(sub_result);
-              for (auto& [key, val] : sub_ok.config.items()) {
-                config[key] = val;
-              }
+              config["command"] = cmd.name;
+              config[cmd.name] = std::move(sub_ok.config);
               for (auto& p : sub_ok.command_path) {
                 command_path.push_back(std::move(p));
               }
@@ -612,10 +611,11 @@ namespace json_commander::parse {
       run_validators(config, args);
 
       if (path_index < command_path.size()) {
+        const auto& cmd_name = command_path[path_index];
         for (const auto& cmd : commands) {
-          if (cmd.name == command_path[path_index]) {
+          if (cmd.name == cmd_name) {
             post_process(
-              config,
+              config[cmd_name],
               cmd.args,
               cmd.commands,
               command_path,

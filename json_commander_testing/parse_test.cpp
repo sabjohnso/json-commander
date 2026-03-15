@@ -727,7 +727,8 @@ TEST_CASE("parse: dispatch selects correct subcommand", "[parse][phase9]") {
   root.commands = {sub};
   auto result = parse::parse(root, {"init", "/tmp"}, parse::no_env());
   auto& ok = std::get<parse::ParseOk>(result);
-  REQUIRE(ok.config["dir"] == "/tmp");
+  REQUIRE(ok.config["command"] == "init");
+  REQUIRE(ok.config["init"]["dir"] == "/tmp");
 }
 
 TEST_CASE("parse: command_path contains subcommand", "[parse][phase9]") {
@@ -748,7 +749,8 @@ TEST_CASE("parse: parent args before subcommand name", "[parse][phase9]") {
     parse::parse(root, {"--verbose", "init", "/tmp"}, parse::no_env());
   auto& ok = std::get<parse::ParseOk>(result);
   REQUIRE(ok.config["verbose"] == true);
-  REQUIRE(ok.config["dir"] == "/tmp");
+  REQUIRE(ok.config["command"] == "init");
+  REQUIRE(ok.config["init"]["dir"] == "/tmp");
   REQUIRE(ok.command_path == std::vector<std::string>{"init"});
 }
 
@@ -767,8 +769,10 @@ TEST_CASE(
     root, {"config", "set", "user.name", "Alice"}, parse::no_env());
   auto& ok = std::get<parse::ParseOk>(result);
   REQUIRE(ok.command_path == std::vector<std::string>{"config", "set"});
-  REQUIRE(ok.config["key"] == "user.name");
-  REQUIRE(ok.config["value"] == "Alice");
+  REQUIRE(ok.config["command"] == "config");
+  REQUIRE(ok.config["config"]["command"] == "set");
+  REQUIRE(ok.config["config"]["set"]["key"] == "user.name");
+  REQUIRE(ok.config["config"]["set"]["value"] == "Alice");
 }
 
 TEST_CASE("parse: unknown subcommand throws Error", "[parse][phase9]") {
@@ -788,7 +792,8 @@ TEST_CASE("parse: parent flags + subcommand args coexist", "[parse][phase9]") {
     parse::parse(root, {"-v", "build", "--target", "release"}, parse::no_env());
   auto& ok = std::get<parse::ParseOk>(result);
   REQUIRE(ok.config["verbose"] == true);
-  REQUIRE(ok.config["target"] == "release");
+  REQUIRE(ok.config["command"] == "build");
+  REQUIRE(ok.config["build"]["target"] == "release");
 }
 
 // ===========================================================================
@@ -1102,8 +1107,9 @@ TEST_CASE("integration: git-like commit -m 'msg' -a", "[parse][phase13]") {
     parse::parse(root, {"commit", "-m", "initial", "-a"}, parse::no_env());
   auto& ok = std::get<parse::ParseOk>(result);
   REQUIRE(ok.command_path == std::vector<std::string>{"commit"});
-  REQUIRE(ok.config["message"] == "initial");
-  REQUIRE(ok.config["all"] == true);
+  REQUIRE(ok.config["command"] == "commit");
+  REQUIRE(ok.config["commit"]["message"] == "initial");
+  REQUIRE(ok.config["commit"]["all"] == true);
   REQUIRE(ok.config["verbose"] == false);
 }
 
@@ -1129,8 +1135,10 @@ TEST_CASE(
   auto& ok = std::get<parse::ParseOk>(result);
   REQUIRE(ok.command_path == std::vector<std::string>{"config", "set"});
   REQUIRE(ok.config["verbose"] == true);
-  REQUIRE(ok.config["key"] == "user.name");
-  REQUIRE(ok.config["value"] == "Alice");
+  REQUIRE(ok.config["command"] == "config");
+  REQUIRE(ok.config["config"]["command"] == "set");
+  REQUIRE(ok.config["config"]["set"]["key"] == "user.name");
+  REQUIRE(ok.config["config"]["set"]["value"] == "Alice");
 }
 
 TEST_CASE(
@@ -1188,7 +1196,8 @@ TEST_CASE("integration: env fallback with subcommands", "[parse][phase13]") {
   auto result =
     parse::parse(root, {"build"}, make_env({{"BUILD_TARGET", "release"}}));
   auto& ok = std::get<parse::ParseOk>(result);
-  REQUIRE(ok.config["target"] == "release");
+  REQUIRE(ok.config["command"] == "build");
+  REQUIRE(ok.config["build"]["target"] == "release");
 }
 
 TEST_CASE("integration: --help on subcommand", "[parse][phase13]") {

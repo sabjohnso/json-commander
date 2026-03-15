@@ -265,6 +265,78 @@ TEST_CASE(
   REQUIRE_FALSE(called);
 }
 
+// ===========================================================================
+// Tests for subcommand dispatch through run()
+// ===========================================================================
+
+static model::Root
+make_subcmd_cli() {
+  model::Option target;
+  target.names = {"target", "t"};
+  target.doc = {"Build target."};
+  target.type = model::ScalarType::String;
+  target.default_value = "debug";
+
+  model::Command build;
+  build.name = "build";
+  build.doc = {"Build the project."};
+  build.args = std::vector<model::Argument>{target};
+
+  model::Command init;
+  init.name = "init";
+  init.doc = {"Initialize a project."};
+
+  model::Flag verbose;
+  verbose.names = {"verbose", "v"};
+  verbose.doc = {"Enable verbose output."};
+
+  model::Root root;
+  root.name = "tool";
+  root.doc = {"A test tool."};
+  root.version = "1.0.0";
+  root.args = std::vector<model::Argument>{verbose};
+  root.commands = std::vector<model::Command>{build, init};
+  return root;
+}
+
+TEST_CASE("run: subcommand config is nested and validated", "[run]") {
+  auto cli = make_subcmd_cli();
+  Argv args{"tool", "--verbose", "build", "--target", "release"};
+
+  json captured;
+  int rc =
+    json_commander::run(cli, args.argc(), args.argv(), [&](const json& config) {
+      captured = config;
+      return 0;
+    });
+
+  REQUIRE(rc == 0);
+  REQUIRE(captured["command"] == "build");
+  REQUIRE(captured["verbose"] == true);
+  REQUIRE(captured["build"]["target"] == "release");
+}
+
+TEST_CASE("run: subcommand with defaults is validated", "[run]") {
+  auto cli = make_subcmd_cli();
+  Argv args{"tool", "build"};
+
+  json captured;
+  int rc =
+    json_commander::run(cli, args.argc(), args.argv(), [&](const json& config) {
+      captured = config;
+      return 0;
+    });
+
+  REQUIRE(rc == 0);
+  REQUIRE(captured["command"] == "build");
+  REQUIRE(captured["verbose"] == false);
+  REQUIRE(captured["build"]["target"] == "debug");
+}
+
+// ===========================================================================
+// Tests for run_file
+// ===========================================================================
+
 TEST_CASE("run_file: loads schema and parses ok", "[run]") {
   Argv args{"serve", "--port", "3000"};
 

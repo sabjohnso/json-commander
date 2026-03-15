@@ -76,4 +76,4 @@ Tests use Catch2 and are organized by module in `json_commander_testing/`. Each 
 - camelCase for functions/variables, PascalCase for types
 - `std::optional` over nullable pointers
 - Structured bindings where appropriate
-- Current version: 0.3.0 (semantic versioning)
+- Current version: 0.4.0 (semantic versioning)

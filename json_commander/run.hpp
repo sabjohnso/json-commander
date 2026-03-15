@@ -2,9 +2,12 @@
 
 #include <json_commander/cmd.hpp>
 #include <json_commander/completion.hpp>
+#include <json_commander/config_schema.hpp>
 #include <json_commander/manpage.hpp>
 #include <json_commander/parse.hpp>
 #include <json_commander/schema_loader.hpp>
+
+#include <nlohmann/json-schema.hpp>
 
 #include <filesystem>
 #include <functional>
@@ -82,6 +85,17 @@ namespace json_commander {
         using T = std::decay_t<decltype(r)>;
 
         if constexpr (std::is_same_v<T, parse::ParseOk>) {
+          try {
+            auto schema = config_schema::to_config_schema(root, r.command_path);
+            nlohmann::json_schema::json_validator validator;
+            validator.set_root_schema(schema);
+            validator.validate(r.config);
+          } catch (const std::exception& e) {
+            std::cerr << name
+                      << ": internal error: config failed schema validation: "
+                      << e.what() << "\n";
+            return 1;
+          }
           return main_fn(r.config);
         } else if constexpr (std::is_same_v<T, parse::HelpRequest>) {
           if (JCMD_ISATTY(JCMD_STDOUT_FD)) {

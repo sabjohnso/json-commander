@@ -150,14 +150,15 @@ do_man(const nlohmann::json& config) {
 
 int
 dispatch(const parse::ParseOk& ok) {
-  const auto& command = ok.command_path.at(0);
+  auto command = ok.config.at("command").get<std::string>();
+  const auto& cmd_config = ok.config.at(command);
 
-  if (command == "validate") return do_validate(ok.config);
-  if (command == "config-schema") return do_config_schema(ok.config);
-  if (command == "parse") return do_parse(ok.config);
-  if (command == "help") return do_help(ok.config);
-  if (command == "man") return do_man(ok.config);
-  if (command == "codegen") return do_codegen(ok.config);
+  if (command == "validate") return do_validate(cmd_config);
+  if (command == "config-schema") return do_config_schema(cmd_config);
+  if (command == "parse") return do_parse(cmd_config);
+  if (command == "help") return do_help(cmd_config);
+  if (command == "man") return do_man(cmd_config);
+  if (command == "codegen") return do_codegen(cmd_config);
 
   std::cerr << "unknown command: " << command << "\n";
   return 1;

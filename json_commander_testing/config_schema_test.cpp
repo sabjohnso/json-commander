@@ -554,20 +554,25 @@ TEST_CASE("to_config_schema: root with empty path", "[config_schema]") {
 }
 
 TEST_CASE(
-  "to_config_schema: subcommand accumulates root args", "[config_schema]") {
+  "to_config_schema: subcommand path uses $defs and const discriminant",
+  "[config_schema]") {
   auto build_cmd =
     make_command("build", {make_option({"target"}, model::ScalarType::String)});
   auto root =
     make_root_with_commands("mytool", {make_flag({"verbose"})}, {build_cmd});
   auto schema = config_schema::to_config_schema(root, {"build"});
   REQUIRE(schema["title"] == "mytool-build configuration");
+  REQUIRE(schema.contains("$defs"));
+  REQUIRE(schema["$defs"].contains("build"));
+  REQUIRE(schema["$defs"]["build"]["properties"].contains("target"));
   REQUIRE(schema["properties"].contains("verbose"));
-  REQUIRE(schema["properties"].contains("target"));
+  REQUIRE(schema["properties"]["command"]["const"] == "build");
+  REQUIRE(schema["properties"]["build"]["$ref"] == "#/$defs/build");
+  REQUIRE(schema["additionalProperties"] == false);
 }
 
 TEST_CASE(
-  "to_config_schema: nested subcommand accumulates all levels",
-  "[config_schema]") {
+  "to_config_schema: nested path produces qualified $defs", "[config_schema]") {
   auto push_cmd = make_command("push", {make_flag({"force"})});
   auto stash_cmd = make_command(
     "stash", {make_option({"message"}, model::ScalarType::String)});
@@ -576,9 +581,33 @@ TEST_CASE(
     make_root_with_commands("git", {make_flag({"verbose"})}, {stash_cmd});
   auto schema = config_schema::to_config_schema(root, {"stash", "push"});
   REQUIRE(schema["title"] == "git-stash-push configuration");
-  REQUIRE(schema["properties"].contains("verbose"));
-  REQUIRE(schema["properties"].contains("message"));
-  REQUIRE(schema["properties"].contains("force"));
+  REQUIRE(schema.contains("$defs"));
+  REQUIRE(schema["$defs"].contains("stash"));
+  REQUIRE(schema["$defs"].contains("stash.push"));
+  REQUIRE(schema["$defs"]["stash.push"]["properties"].contains("force"));
+  REQUIRE(schema["properties"]["command"]["const"] == "stash");
+  REQUIRE(schema["properties"]["stash"]["$ref"] == "#/$defs/stash");
+}
+
+TEST_CASE(
+  "to_config_schema: root with commands uses discriminated union",
+  "[config_schema]") {
+  auto build_cmd =
+    make_command("build", {make_option({"target"}, model::ScalarType::String)});
+  auto init_cmd = make_command("init");
+  auto root = make_root_with_commands(
+    "mytool", {make_flag({"verbose"})}, {build_cmd, init_cmd});
+  auto schema = config_schema::to_config_schema(root);
+  REQUIRE(schema.contains("oneOf"));
+  REQUIRE(schema["oneOf"].size() == 2);
+  REQUIRE(schema.contains("$defs"));
+  REQUIRE(schema["$defs"].contains("build"));
+  REQUIRE(schema["$defs"].contains("init"));
+  REQUIRE(schema["oneOf"][0]["properties"]["command"]["const"] == "build");
+  REQUIRE(schema["oneOf"][0]["properties"]["build"]["$ref"] == "#/$defs/build");
+  REQUIRE(schema["oneOf"][0]["additionalProperties"] == false);
+  REQUIRE(schema["oneOf"][1]["properties"]["command"]["const"] == "init");
+  REQUIRE(schema["oneOf"][1]["properties"]["init"]["$ref"] == "#/$defs/init");
 }
 
 TEST_CASE("to_config_schema: nonexistent path throws", "[config_schema]") {
@@ -693,7 +722,7 @@ TEST_CASE(
 }
 
 TEST_CASE(
-  "integration: subcommand schema validates accumulated args",
+  "integration: subcommand schema validates nested args",
   "[config_schema][integration]") {
   auto build_cmd = make_command(
     "build", {make_option_required({"target"}, model::ScalarType::String)});
@@ -701,14 +730,44 @@ TEST_CASE(
     make_root_with_commands("mytool", {make_flag({"verbose"})}, {build_cmd});
   auto schema = config_schema::to_config_schema(root, {"build"});
 
-  json valid = {{"verbose", false}, {"target", "x86_64"}};
+  json valid = {
+    {"verbose", false},
+    {"command", "build"},
+    {"build", {{"target", "x86_64"}}}};
   REQUIRE_NOTHROW(validate_config(schema, valid));
 
-  json missing_root_arg = {{"target", "x86_64"}};
+  json missing_root_arg = {
+    {"command", "build"}, {"build", {{"target", "x86_64"}}}};
   REQUIRE_THROWS(validate_config(schema, missing_root_arg));
 
-  json missing_cmd_arg = {{"verbose", false}};
+  json missing_cmd_arg = {
+    {"verbose", false}, {"command", "build"}, {"build", json::object()}};
   REQUIRE_THROWS(validate_config(schema, missing_cmd_arg));
+}
+
+TEST_CASE(
+  "integration: discriminated union rejects wrong subcommand properties",
+  "[config_schema][integration]") {
+  auto build_cmd = make_command(
+    "build",
+    {make_option_with_default({"target"}, model::ScalarType::String, "debug")});
+  auto init_cmd = make_command("init");
+  auto root = make_root_with_commands(
+    "mytool", {make_flag({"verbose"})}, {build_cmd, init_cmd});
+  auto schema = config_schema::to_config_schema(root);
+
+  json valid = {
+    {"verbose", false},
+    {"command", "build"},
+    {"build", {{"target", "release"}}}};
+  REQUIRE_NOTHROW(validate_config(schema, valid));
+
+  json has_extra_subcmd = {
+    {"verbose", false},
+    {"command", "build"},
+    {"build", {{"target", "release"}}},
+    {"init", json::object()}};
+  REQUIRE_THROWS(validate_config(schema, has_extra_subcmd));
 }
 
 TEST_CASE(
@@ -723,4 +782,137 @@ TEST_CASE(
 
   json invalid = {{"jobs", "not_an_int"}};
   REQUIRE_THROWS(validate_config(schema, invalid));
+}
+
+// ---------------------------------------------------------------------------
+// Phase 8: Round-trip — parse real argv, validate output against schema
+// ---------------------------------------------------------------------------
+
+#include <json_commander/cmd.hpp>
+#include <json_commander/parse.hpp>
+
+namespace {
+
+  json
+  parse_to_config(
+    const model::Root& root,
+    std::vector<std::string> argv,
+    parse::EnvLookup env = parse::no_env()) {
+    auto spec = cmd::make(root);
+    auto result = parse::parse(spec, argv, std::move(env));
+    return std::get<parse::ParseOk>(result).config;
+  }
+
+  parse::EnvLookup
+  make_env(std::initializer_list<std::pair<std::string, std::string>> pairs) {
+    auto map = std::make_shared<std::unordered_map<std::string, std::string>>();
+    for (const auto& p : pairs) {
+      map->emplace(p.first, p.second);
+    }
+    return [map](const std::string& var) -> std::optional<std::string> {
+      auto it = map->find(var);
+      if (it == map->end()) { return std::nullopt; }
+      return it->second;
+    };
+  }
+
+} // namespace
+
+TEST_CASE(
+  "round-trip: root-only CLI config validates against schema",
+  "[config_schema][round_trip]") {
+  auto root = make_root(
+    "mytool",
+    {make_flag({"verbose"}),
+     make_option_with_default({"output"}, model::ScalarType::String, "out.txt"),
+     make_positional_required("file", model::ScalarType::File)});
+  auto schema = config_schema::to_config_schema(root);
+  auto config = parse_to_config(root, {"--verbose", "--output", "x.txt", "f"});
+  REQUIRE_NOTHROW(validate_config(schema, config));
+}
+
+TEST_CASE(
+  "round-trip: root-only defaults validate against schema",
+  "[config_schema][round_trip]") {
+  auto root = make_root(
+    "mytool",
+    {make_flag({"verbose"}),
+     make_option_with_default(
+       {"output"}, model::ScalarType::String, "out.txt")});
+  auto schema = config_schema::to_config_schema(root);
+  auto config = parse_to_config(root, {});
+  REQUIRE_NOTHROW(validate_config(schema, config));
+}
+
+TEST_CASE(
+  "round-trip: single subcommand config validates against schema",
+  "[config_schema][round_trip]") {
+  auto build_cmd = make_command(
+    "build",
+    {make_option_with_default({"target"}, model::ScalarType::String, "debug")});
+  auto root =
+    make_root_with_commands("mytool", {make_flag({"verbose"})}, {build_cmd});
+  auto schema = config_schema::to_config_schema(root, {"build"});
+  auto config =
+    parse_to_config(root, {"--verbose", "build", "--target", "release"});
+  REQUIRE_NOTHROW(validate_config(schema, config));
+}
+
+TEST_CASE(
+  "round-trip: subcommand with defaults validates against schema",
+  "[config_schema][round_trip]") {
+  auto build_cmd = make_command(
+    "build",
+    {make_option_with_default({"target"}, model::ScalarType::String, "debug")});
+  auto root =
+    make_root_with_commands("mytool", {make_flag({"verbose"})}, {build_cmd});
+  auto schema = config_schema::to_config_schema(root, {"build"});
+  auto config = parse_to_config(root, {"build"});
+  REQUIRE_NOTHROW(validate_config(schema, config));
+}
+
+TEST_CASE(
+  "round-trip: nested subcommands validate against schema",
+  "[config_schema][round_trip]") {
+  auto set_cmd = make_command(
+    "set",
+    {make_positional_required("key", model::ScalarType::String),
+     make_positional_required("value", model::ScalarType::String)});
+  auto config_cmd = make_command("config");
+  config_cmd.commands = std::vector<model::Command>{set_cmd};
+  auto root =
+    make_root_with_commands("tool", {make_flag({"verbose"})}, {config_cmd});
+  auto schema = config_schema::to_config_schema(root, {"config", "set"});
+  auto config = parse_to_config(root, {"config", "set", "user.name", "Alice"});
+  REQUIRE_NOTHROW(validate_config(schema, config));
+}
+
+TEST_CASE(
+  "round-trip: env fallback config validates against schema",
+  "[config_schema][round_trip]") {
+  auto opt =
+    make_option_with_default({"target"}, model::ScalarType::String, "debug");
+  opt.env = model::EnvBinding{std::string("BUILD_TARGET")};
+  auto build_cmd = make_command("build", {opt});
+  auto root =
+    make_root_with_commands("mytool", {make_flag({"verbose"})}, {build_cmd});
+  auto schema = config_schema::to_config_schema(root, {"build"});
+  auto config =
+    parse_to_config(root, {"build"}, make_env({{"BUILD_TARGET", "release"}}));
+  REQUIRE_NOTHROW(validate_config(schema, config));
+}
+
+TEST_CASE(
+  "round-trip: root-only schema (no path) validates subcommand config",
+  "[config_schema][round_trip]") {
+  auto build_cmd = make_command(
+    "build",
+    {make_option_with_default({"target"}, model::ScalarType::String, "debug")});
+  auto init_cmd = make_command("init");
+  auto root = make_root_with_commands(
+    "mytool", {make_flag({"verbose"})}, {build_cmd, init_cmd});
+  auto schema = config_schema::to_config_schema(root);
+  auto config =
+    parse_to_config(root, {"--verbose", "build", "--target", "release"});
+  REQUIRE_NOTHROW(validate_config(schema, config));
 }

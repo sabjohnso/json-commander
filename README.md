@@ -3,7 +3,7 @@
 [![CI](https://github.com/JSON-Commander/json-commander/actions/workflows/ci.yml/badge.svg)](https://github.com/JSON-Commander/json-commander/actions/workflows/ci.yml)
 
 A C++20 library for defining command line interfaces via JSON schemas
-(current version: 0.3.0).
+(current version: 0.4.0).
 
 Inspired by OCaml's [cmdliner](https://erratique.ch/software/cmdliner),
 JSON-Commander takes a declarative approach: describe your CLI as a JSON schema,
