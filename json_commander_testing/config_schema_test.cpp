@@ -247,7 +247,7 @@ TEST_CASE(
 }
 
 TEST_CASE(
-  "type_spec_schema: PairType produces tuple with prefixItems",
+  "type_spec_schema: PairType produces tuple with items array",
   "[config_schema]") {
   model::PairType pt{};
   pt.first = model::ScalarType::String;
@@ -256,8 +256,8 @@ TEST_CASE(
   auto result = config_schema::detail::type_spec_schema(ts);
   json expected = {
     {"type", "array"},
-    {"prefixItems", {{{"type", "string"}}, {{"type", "integer"}}}},
-    {"items", false},
+    {"items", {{{"type", "string"}}, {{"type", "integer"}}}},
+    {"additionalItems", false},
     {"minItems", 2},
     {"maxItems", 2}};
   REQUIRE(result == expected);
@@ -273,9 +273,9 @@ TEST_CASE(
   auto result = config_schema::detail::type_spec_schema(ts);
   json expected = {
     {"type", "array"},
-    {"prefixItems",
+    {"items",
      {{{"type", "integer"}}, {{"type", "number"}}, {{"type", "boolean"}}}},
-    {"items", false},
+    {"additionalItems", false},
     {"minItems", 3},
     {"maxItems", 3}};
   REQUIRE(result == expected);
@@ -468,7 +468,7 @@ TEST_CASE("generate: empty args produces minimal schema", "[config_schema]") {
   auto root = make_root("mytool");
   auto args = root.args.value_or(std::vector<model::Argument>{});
   auto schema = config_schema::detail::generate(args, "mytool");
-  REQUIRE(schema["$schema"] == "https://json-schema.org/draft/2020-12/schema");
+  REQUIRE(schema["$schema"] == "http://json-schema.org/draft-07/schema#");
   REQUIRE(schema["title"] == "mytool configuration");
   REQUIRE(schema["type"] == "object");
   REQUIRE(schema["additionalProperties"] == false);
@@ -554,7 +554,7 @@ TEST_CASE("to_config_schema: root with empty path", "[config_schema]") {
 }
 
 TEST_CASE(
-  "to_config_schema: subcommand path uses $defs and const discriminant",
+  "to_config_schema: subcommand path uses definitions and const discriminant",
   "[config_schema]") {
   auto build_cmd =
     make_command("build", {make_option({"target"}, model::ScalarType::String)});
@@ -562,17 +562,18 @@ TEST_CASE(
     make_root_with_commands("mytool", {make_flag({"verbose"})}, {build_cmd});
   auto schema = config_schema::to_config_schema(root, {"build"});
   REQUIRE(schema["title"] == "mytool-build configuration");
-  REQUIRE(schema.contains("$defs"));
-  REQUIRE(schema["$defs"].contains("build"));
-  REQUIRE(schema["$defs"]["build"]["properties"].contains("target"));
+  REQUIRE(schema.contains("definitions"));
+  REQUIRE(schema["definitions"].contains("build"));
+  REQUIRE(schema["definitions"]["build"]["properties"].contains("target"));
   REQUIRE(schema["properties"].contains("verbose"));
   REQUIRE(schema["properties"]["command"]["const"] == "build");
-  REQUIRE(schema["properties"]["build"]["$ref"] == "#/$defs/build");
+  REQUIRE(schema["properties"]["build"]["$ref"] == "#/definitions/build");
   REQUIRE(schema["additionalProperties"] == false);
 }
 
 TEST_CASE(
-  "to_config_schema: nested path produces qualified $defs", "[config_schema]") {
+  "to_config_schema: nested path produces qualified definitions",
+  "[config_schema]") {
   auto push_cmd = make_command("push", {make_flag({"force"})});
   auto stash_cmd = make_command(
     "stash", {make_option({"message"}, model::ScalarType::String)});
@@ -581,12 +582,12 @@ TEST_CASE(
     make_root_with_commands("git", {make_flag({"verbose"})}, {stash_cmd});
   auto schema = config_schema::to_config_schema(root, {"stash", "push"});
   REQUIRE(schema["title"] == "git-stash-push configuration");
-  REQUIRE(schema.contains("$defs"));
-  REQUIRE(schema["$defs"].contains("stash"));
-  REQUIRE(schema["$defs"].contains("stash.push"));
-  REQUIRE(schema["$defs"]["stash.push"]["properties"].contains("force"));
+  REQUIRE(schema.contains("definitions"));
+  REQUIRE(schema["definitions"].contains("stash"));
+  REQUIRE(schema["definitions"].contains("stash.push"));
+  REQUIRE(schema["definitions"]["stash.push"]["properties"].contains("force"));
   REQUIRE(schema["properties"]["command"]["const"] == "stash");
-  REQUIRE(schema["properties"]["stash"]["$ref"] == "#/$defs/stash");
+  REQUIRE(schema["properties"]["stash"]["$ref"] == "#/definitions/stash");
 }
 
 TEST_CASE(
@@ -600,14 +601,16 @@ TEST_CASE(
   auto schema = config_schema::to_config_schema(root);
   REQUIRE(schema.contains("oneOf"));
   REQUIRE(schema["oneOf"].size() == 2);
-  REQUIRE(schema.contains("$defs"));
-  REQUIRE(schema["$defs"].contains("build"));
-  REQUIRE(schema["$defs"].contains("init"));
+  REQUIRE(schema.contains("definitions"));
+  REQUIRE(schema["definitions"].contains("build"));
+  REQUIRE(schema["definitions"].contains("init"));
   REQUIRE(schema["oneOf"][0]["properties"]["command"]["const"] == "build");
-  REQUIRE(schema["oneOf"][0]["properties"]["build"]["$ref"] == "#/$defs/build");
+  REQUIRE(
+    schema["oneOf"][0]["properties"]["build"]["$ref"] == "#/definitions/build");
   REQUIRE(schema["oneOf"][0]["additionalProperties"] == false);
   REQUIRE(schema["oneOf"][1]["properties"]["command"]["const"] == "init");
-  REQUIRE(schema["oneOf"][1]["properties"]["init"]["$ref"] == "#/$defs/init");
+  REQUIRE(
+    schema["oneOf"][1]["properties"]["init"]["$ref"] == "#/definitions/init");
 }
 
 TEST_CASE("to_config_schema: nonexistent path throws", "[config_schema]") {

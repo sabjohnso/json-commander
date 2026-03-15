@@ -53,19 +53,19 @@ namespace json_commander::config_schema {
           } else if constexpr (std::is_same_v<T, model::PairType>) {
             return {
               {"type", "array"},
-              {"prefixItems",
+              {"items",
                {scalar_type_schema(s.first), scalar_type_schema(s.second)}},
-              {"items", false},
+              {"additionalItems", false},
               {"minItems", 2},
               {"maxItems", 2}};
           } else if constexpr (std::is_same_v<T, model::TripleType>) {
             return {
               {"type", "array"},
-              {"prefixItems",
+              {"items",
                {scalar_type_schema(s.first),
                 scalar_type_schema(s.second),
                 scalar_type_schema(s.third)}},
-              {"items", false},
+              {"additionalItems", false},
               {"minItems", 3},
               {"maxItems", 3}};
           }
@@ -142,7 +142,7 @@ namespace json_commander::config_schema {
       }
 
       return {
-        {"$schema", "https://json-schema.org/draft/2020-12/schema"},
+        {"$schema", "http://json-schema.org/draft-07/schema#"},
         {"title", name + " configuration"},
         {"type", "object"},
         {"properties", properties},
@@ -165,7 +165,7 @@ namespace json_commander::config_schema {
     // Generates a command-level schema, registering subcommand definitions
     // in the shared top-level `defs` map under qualified names.
     // Returns either a simple object schema (no subcommands) or a
-    // discriminated union (oneOf) referencing $defs entries.
+    // discriminated union (oneOf) referencing definitions entries.
     inline nlohmann::json
     generate_command_schema(
       const std::vector<model::Argument>& args,
@@ -202,7 +202,7 @@ namespace json_commander::config_schema {
           prefix.empty() ? cmd.name : prefix + "." + cmd.name;
         properties["command"] = {{"const", cmd.name}};
         required.push_back("command");
-        properties[cmd.name] = {{"$ref", "#/$defs/" + def_name}};
+        properties[cmd.name] = {{"$ref", "#/definitions/" + def_name}};
         required.push_back(cmd.name);
         variants.push_back(
           {{"properties", properties},
@@ -227,9 +227,9 @@ namespace json_commander::config_schema {
 
     nlohmann::json defs = nlohmann::json::object();
     auto schema = detail::generate_command_schema(args, commands, defs, "");
-    schema["$schema"] = "https://json-schema.org/draft/2020-12/schema";
+    schema["$schema"] = "http://json-schema.org/draft-07/schema#";
     schema["title"] = root.name + " configuration";
-    if (!defs.empty()) { schema["$defs"] = defs; }
+    if (!defs.empty()) { schema["definitions"] = defs; }
     return schema;
   }
 
@@ -295,7 +295,7 @@ namespace json_commander::config_schema {
       properties["command"] = {{"const", next_entry.cmd->name}};
       required.push_back("command");
       properties[next_entry.cmd->name] = {
-        {"$ref", "#/$defs/" + next_entry.def_name}};
+        {"$ref", "#/definitions/" + next_entry.def_name}};
       required.push_back(std::string(next_entry.cmd->name));
 
       defs[entry.def_name] = {
@@ -312,17 +312,17 @@ namespace json_commander::config_schema {
     auto& first = path_entries[0];
     properties["command"] = {{"const", first.cmd->name}};
     required.push_back("command");
-    properties[first.cmd->name] = {{"$ref", "#/$defs/" + first.def_name}};
+    properties[first.cmd->name] = {{"$ref", "#/definitions/" + first.def_name}};
     required.push_back(std::string(first.cmd->name));
 
     nlohmann::json schema = {
-      {"$schema", "https://json-schema.org/draft/2020-12/schema"},
+      {"$schema", "http://json-schema.org/draft-07/schema#"},
       {"title", display_name + " configuration"},
       {"type", "object"},
       {"properties", properties},
       {"required", required},
       {"additionalProperties", false}};
-    if (!defs.empty()) { schema["$defs"] = defs; }
+    if (!defs.empty()) { schema["definitions"] = defs; }
     return schema;
   }
 
