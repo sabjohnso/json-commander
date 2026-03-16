@@ -85,6 +85,44 @@ namespace json_commander {
         using T = std::decay_t<decltype(r)>;
 
         if constexpr (std::is_same_v<T, parse::ParseOk>) {
+          // Check for missing subcommand: walk into the nested config
+          // to find the deepest level that should have a "command" but doesn't.
+          {
+            const nlohmann::json* cfg = &r.config;
+            const model::Root* cur_root = &root;
+            std::vector<std::string> help_path = r.command_path;
+            bool has_commands =
+              cur_root->commands.has_value() && !cur_root->commands->empty();
+
+            // Walk through selected commands to find the leaf
+            const std::vector<model::Command>* cmds =
+              has_commands ? &*cur_root->commands : nullptr;
+            for (const auto& seg : r.command_path) {
+              if (!cmds) break;
+              for (const auto& cmd : *cmds) {
+                if (cmd.name == seg) {
+                  cfg = &(*cfg)[seg];
+                  cmds = (cmd.commands.has_value() && !cmd.commands->empty())
+                           ? &*cmd.commands
+                           : nullptr;
+                  has_commands = cmds != nullptr;
+                  break;
+                }
+              }
+            }
+
+            if (has_commands && !cfg->contains("command")) {
+              std::cerr << name << ": missing subcommand\n";
+              if (JCMD_ISATTY(JCMD_STDERR_FD)) {
+                int width = terminal_width(JCMD_STDERR_FD);
+                std::cerr << manpage::to_ansi_text(root, r.command_path, width);
+              } else {
+                std::cerr << manpage::to_plain_text(root, r.command_path);
+              }
+              return 1;
+            }
+          }
+
           try {
             auto schema = config_schema::to_config_schema(root, r.command_path);
             nlohmann::json_schema::json_validator validator;

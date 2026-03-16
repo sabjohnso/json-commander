@@ -333,6 +333,55 @@ TEST_CASE("run: subcommand with defaults is validated", "[run]") {
   REQUIRE(captured["build"]["target"] == "debug");
 }
 
+TEST_CASE(
+  "run: missing subcommand shows help and returns 1, callback not called",
+  "[run]") {
+  auto cli = make_subcmd_cli();
+  Argv args{"tool"};
+
+  bool called = false;
+  int rc = json_commander::run(cli, args.argc(), args.argv(), [&](const json&) {
+    called = true;
+    return 0;
+  });
+
+  REQUIRE(rc == 1);
+  REQUIRE_FALSE(called);
+}
+
+TEST_CASE("run: missing nested subcommand shows help and returns 1", "[run]") {
+  model::Command set_cmd;
+  set_cmd.name = "set";
+  set_cmd.doc = {"Set a config value."};
+
+  model::Command get_cmd;
+  get_cmd.name = "get";
+  get_cmd.doc = {"Get a config value."};
+
+  model::Command config_cmd;
+  config_cmd.name = "config";
+  config_cmd.doc = {"Manage configuration."};
+  config_cmd.commands = std::vector<model::Command>{set_cmd, get_cmd};
+
+  model::Root root;
+  root.name = "tool";
+  root.doc = {"A test tool."};
+  root.version = "1.0.0";
+  root.commands = std::vector<model::Command>{config_cmd};
+
+  Argv args{"tool", "config"};
+
+  bool called = false;
+  int rc =
+    json_commander::run(root, args.argc(), args.argv(), [&](const json&) {
+      called = true;
+      return 0;
+    });
+
+  REQUIRE(rc == 1);
+  REQUIRE_FALSE(called);
+}
+
 // ===========================================================================
 // Tests for run_file
 // ===========================================================================
