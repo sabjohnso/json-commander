@@ -510,7 +510,7 @@
     },
     "command": {
       "title": "Command",
-      "description": "A command or subcommand definition. Commands have a name, documentation, and optionally arguments and nested subcommands. A command with both 'args' and 'commands' is a group with a default action (matching cmdliner's Cmd.group ~default).",
+      "description": "A command or subcommand definition. Commands have a name, documentation, and optionally arguments and nested subcommands. A command with 'commands' requires a subcommand to be provided.",
       "type": "object",
       "required": ["name", "doc"],
       "properties": {
