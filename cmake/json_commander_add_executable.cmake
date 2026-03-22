@@ -121,8 +121,11 @@ function(json_commander_add_executable name)
   target_include_directories(${name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
   if(NOT JCMD_PARSE_JSON)
-    # Add codegen custom command: generates the model header at build time
+    # Add codegen custom command: generates the model header at build time.
+    # Use $<CONFIG> so each build configuration gets its own output — avoids
+    # unnecessary rebuilds when switching configs with Ninja Multi-Config.
     set(_codegen_script "${json_commander_TEMPLATE_DIR}/json_commander_generate_codegen.cmake")
+    set(_model_header "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${_model_header_name}")
 
     add_custom_command(
       OUTPUT "${_model_header}"
@@ -139,8 +142,8 @@ function(json_commander_add_executable name)
     # dependency directly — no always-dirty custom target needed.
     target_sources(${name} PRIVATE "${_model_header}")
 
-    # The generated header lives in the binary dir
-    target_include_directories(${name} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+    # The generated header lives in a per-config subdirectory of the binary dir
+    target_include_directories(${name} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
   endif()
 
   if(NOT JCMD_NO_INSTALL)
@@ -150,8 +153,9 @@ function(json_commander_add_executable name)
     install(FILES "${_schema_abs}"
       DESTINATION "${CMAKE_INSTALL_DATADIR}/${name}")
 
-    # Output directory for generated man pages and completions
-    set(_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/${name}_generated")
+    # Output directory for generated man pages and completions.
+    # Per-config path avoids regeneration when switching configs.
+    set(_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${name}_generated")
     set(_man_script "${json_commander_TEMPLATE_DIR}/json_commander_generate_manpage.cmake")
     set(_exe_base_name "$<TARGET_FILE_BASE_NAME:${name}>")
 
@@ -195,8 +199,9 @@ function(json_commander_add_executable name)
 
     add_custom_target(${name}_manpage ALL DEPENDS ${_man_outputs})
 
+    set(_gen_dir_install "${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/${name}_generated")
     install(CODE "
-      file(GLOB _manpages \"${_gen_dir}/*.1\")
+      file(GLOB _manpages \"${_gen_dir_install}/*.1\")
       foreach(_mp IN LISTS _manpages)
         file(INSTALL \"\${_mp}\"
           DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_MANDIR}/man1\")
@@ -237,19 +242,19 @@ function(json_commander_add_executable name)
     add_custom_target(${name}_completions ALL DEPENDS ${_comp_outputs})
 
     install(CODE "
-      file(GLOB _bash_comps \"${_gen_dir}/*.bash\")
+      file(GLOB _bash_comps \"${_gen_dir_install}/*.bash\")
       foreach(_f IN LISTS _bash_comps)
         get_filename_component(_bn \"\${_f}\" NAME_WE)
         file(INSTALL \"\${_f}\"
           DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/bash-completion/completions\"
           RENAME \"\${_bn}\")
       endforeach()
-      file(GLOB _zsh_comps \"${_gen_dir}/_*\")
+      file(GLOB _zsh_comps \"${_gen_dir_install}/_*\")
       foreach(_f IN LISTS _zsh_comps)
         file(INSTALL \"\${_f}\"
           DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/zsh/site-functions\")
       endforeach()
-      file(GLOB _fish_comps \"${_gen_dir}/*.fish\")
+      file(GLOB _fish_comps \"${_gen_dir_install}/*.fish\")
       foreach(_f IN LISTS _fish_comps)
         file(INSTALL \"\${_f}\"
           DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/fish/vendor_completions.d\")

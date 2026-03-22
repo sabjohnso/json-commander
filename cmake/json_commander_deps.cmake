@@ -9,6 +9,8 @@ find_package(CMakeUtilities)
 
 include(FetchContent)
 
+find_package(CTestDeps REQUIRED)
+
 # Pin dependency versions internally so downstream consumers
 # don't need to set these in their own presets.
 if(NOT DEFINED nlohmann_json_GIT_TAG)

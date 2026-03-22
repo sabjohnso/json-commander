@@ -20,8 +20,9 @@ install(TARGETS json-commander
 install(FILES json_commander.json
   DESTINATION ${CMAKE_INSTALL_DATADIR}/json_commander)
 
-# Output directory for generated man pages and completions
-set(_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/json-commander_generated")
+# Output directory for generated man pages and completions.
+# Per-config path avoids regeneration when switching configs.
+set(_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/json-commander_generated")
 set(_man_script "${json_commander_TEMPLATE_DIR}/json_commander_generate_manpage.cmake")
 set(_exe_base_name "$<TARGET_FILE_BASE_NAME:json-commander>")
 
@@ -66,8 +67,9 @@ add_custom_command(
 
 add_custom_target(json-commander_manpage ALL DEPENDS ${_man_outputs})
 
+set(_gen_dir_install "${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/json-commander_generated")
 install(CODE "
-  file(GLOB _manpages \"${_gen_dir}/*.1\")
+  file(GLOB _manpages \"${_gen_dir_install}/*.1\")
   foreach(_mp IN LISTS _manpages)
     file(INSTALL \"\${_mp}\"
       DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_MANDIR}/man1\")
@@ -108,19 +110,19 @@ add_custom_command(
 add_custom_target(json-commander_completions ALL DEPENDS ${_comp_outputs})
 
 install(CODE "
-  file(GLOB _bash_comps \"${_gen_dir}/*.bash\")
+  file(GLOB _bash_comps \"${_gen_dir_install}/*.bash\")
   foreach(_f IN LISTS _bash_comps)
     get_filename_component(_bn \"\${_f}\" NAME_WE)
     file(INSTALL \"\${_f}\"
       DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/bash-completion/completions\"
       RENAME \"\${_bn}\")
   endforeach()
-  file(GLOB _zsh_comps \"${_gen_dir}/_*\")
+  file(GLOB _zsh_comps \"${_gen_dir_install}/_*\")
   foreach(_f IN LISTS _zsh_comps)
     file(INSTALL \"\${_f}\"
       DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/zsh/site-functions\")
   endforeach()
-  file(GLOB _fish_comps \"${_gen_dir}/*.fish\")
+  file(GLOB _fish_comps \"${_gen_dir_install}/*.fish\")
   foreach(_f IN LISTS _fish_comps)
     file(INSTALL \"\${_f}\"
       DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/fish/vendor_completions.d\")
